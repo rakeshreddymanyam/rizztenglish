@@ -63,7 +63,6 @@
         keyboard: <><rect width="20" height="16" x="2" y="4" rx="2" ry="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></>,
         clipboard: <><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></>,
         send: <><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></>,
-        globe: <><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></>,
         key: <><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></>,
         smartphone: <><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></>,
         hand: <><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></>,
@@ -217,27 +216,6 @@
       { id: "date", title: "Ask For A Hangout / Date", desc: "Smoothly move from chat to meeting" }
     ];
 
-    const DEFAULT_REPLIES = [
-      {
-        reply: "Nuvvu ila silent ga unte naku bore kodthundi, em chesthunnavo cheppu mundu!",
-        translation: "If you stay silent like this I get bored, tell me what you're doing first!",
-        whyItWorks: "Sounds like a real friend/crush texting directly, not a scripted line.",
-        tone: "Casual & Playful"
-      },
-      {
-        reply: "Sare kani, ee roju nee day ela gadichindi? Edaina interesting jariginda?",
-        translation: "Anyway, how did your day go today? Did anything interesting happen?",
-        whyItWorks: "Naturally opens up the conversation so they talk about their day.",
-        tone: "Warm & Natural"
-      },
-      {
-        reply: "Nijam cheppu, ippati varaku naa gurinche alochisthunnav kada?",
-        translation: "Tell the truth, you were thinking about me until just now, right?",
-        whyItWorks: "Confident, teasing assumption that sparks a playful reply.",
-        tone: "Smooth Flirt"
-      }
-    ];
-
     const INITIAL_CHAT_DEMO = [
       { id: 1, sender: "them", text: "Hey! Em chesthunnav? Chala bore kodthundi ee roju 😅", time: "10:14 PM" },
       { id: 2, sender: "me", text: "Just scrolling, nuvvu online ki vachav ga ippudu set aipothundi", time: "10:15 PM" },
@@ -267,6 +245,7 @@
       const [detectedBubble, setDetectedBubble] = useState(INITIAL_CHAT_DEMO[2]);
       const [kbSuggestions, setKbSuggestions] = useState([]);
       const [kbLoading, setKbLoading] = useState(false);
+      const [kbError, setKbError] = useState("");
       const [kbDraft, setKbDraft] = useState("");
       const [pressingId, setPressingId] = useState(null);
       const [toastMsg, setToastMsg] = useState("");
@@ -276,6 +255,7 @@
       const [selectedTopic, setSelectedTopic] = useState("icebreaker");
       const [topicIdeas, setTopicIdeas] = useState([]);
       const [topicLoading, setTopicLoading] = useState(false);
+      const [topicError, setTopicError] = useState("");
 
       // Saved Favorites
       const [savedLines, setSavedLines] = useState(() => {
@@ -306,16 +286,17 @@
           throw new Error("Tap 'Add API Key' at the top right and paste your free Gemini API key first.");
         }
 
-        // Current active Gemini 3.x models (2.5 models are restricted for new keys)
+        // Verified active Gemini API endpoints with automatic retry on 503 traffic spikes
         const modelsToTry = [
-          "gemini-3.5-flash-lite",
-          "gemini-3.8-flash",
-          "gemini-3.6-flash"
+          "gemini-2.5-flash",
+          "gemini-2.0-flash",
+          "gemini-2.5-flash-lite"
         ];
 
         const payload = {
           contents: [{ parts: [{ text: promptText }] }],
           generationConfig: {
+            temperature: 0.9,
             responseMimeType: "application/json",
             responseSchema: {
               type: "OBJECT",
@@ -339,7 +320,7 @@
           }
         };
 
-        let lastError = "Could not reach Gemini servers.";
+        let lastError = "Could not connect to Gemini API.";
 
         for (const modelName of modelsToTry) {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -347,8 +328,7 @@
             const response = await fetch(url, {
               method: "POST",
               headers: {
-                "Content-Type": "application/json",
-                "x-goog-api-key": apiKey
+                "Content-Type": "application/json"
               },
               body: JSON.stringify(payload)
             });
@@ -372,7 +352,7 @@
               if (response.status === 400 || response.status === 401 || response.status === 403) {
                 throw new Error(lastError);
               }
-              await new Promise((r) => setTimeout(r, 500));
+              await new Promise((r) => setTimeout(r, 700));
             }
           } catch (err) {
             if (err.message && (err.message.includes("400") || err.message.includes("401") || err.message.includes("403"))) {
@@ -402,11 +382,12 @@
       };
 
       const humanStyleRule = `HUMAN TEXTING STYLE RULES (CRITICAL — MUST SOUND 100% HUMAN, NEVER LIKE AI):
+- Your reply MUST directly answer and match the exact words, context, and meaning of the incoming message! Never give a generic or unrelated reply.
 - Sound like a real 23-year-old texting on WhatsApp or Instagram, NOT a movie dialogue writer, poet, or AI chatbot.
 - Keep messages crisp, natural, and realistic (1 to 2 short sentences max).
-- NEVER use cheesy poetic lines, heavy metaphors, Shakespeare/bollywood drama, or overly formal words.
+- NEVER use cheesy poetic lines, heavy metaphors, or overly formal words.
 - Use natural lowercase/casual punctuation and at most 0 or 1 subtle emoji.
-- Include a natural conversational hook (a light question or teasing statement) so the other person wants to reply and keep chatting long.`;
+- Include a natural conversational hook (a light question or teasing statement) directly tied to what they just said.`;
 
       const handleGenerateReplies = async (overrideMsg = null, overrideLang = null) => {
         const targetMsg = (overrideMsg !== null ? overrideMsg : incomingMsg).trim();
@@ -429,16 +410,16 @@ ${getLanguageRule(activeLang)}
 
 ${humanStyleRule}
 
-Generate 3 distinct, natural human reply options.
+Generate 3 distinct, natural human reply options that directly respond to "${targetMsg}".
 For each option provide:
 - "reply": the exact text message to copy and send
 - "translation": clear English meaning (if reply is already Pure English, give a quick note on the subtext/vibe)
-- "whyItWorks": 1 short sentence explaining why this keeps the chat going
+- "whyItWorks": 1 short sentence explaining why this matches their message and keeps the chat going
 - "tone": 2-word tag (e.g. "Casual Tease", "Sweet & Real", "Smooth Flirt")`;
 
         try {
           const results = await callGemini(prompt);
-          setGeneratedReplies(results.length ? results : DEFAULT_REPLIES);
+          setGeneratedReplies(results);
         } catch (err) {
           setErrorMsg(err.message || "Could not connect. Check your API key.");
         } finally {
@@ -446,21 +427,23 @@ For each option provide:
         }
       };
 
-      const detectAndGenerateForKeyboard = async (msgText) => {
+      const detectAndGenerateForKeyboard = async (msgText, overrideLang = null) => {
+        const activeLang = overrideLang || language;
         setKbLoading(true);
+        setKbError("");
         setKbSuggestions([]);
         const vibeObj = VIBE_OPTIONS.find((v) => v.id === vibe);
         const prompt = `Incoming WhatsApp/Instagram message: "${msgText}"
 Vibe: ${vibeObj?.label}.
-${getLanguageRule(language)}
+${getLanguageRule(activeLang)}
 ${humanStyleRule}
-Generate 3 short, ultra-natural human replies that keep the chat going. Provide reply, translation, whyItWorks, and tone.`;
+Generate 3 short, ultra-natural human replies that directly match and answer "${msgText}". Provide reply, translation, whyItWorks, and tone.`;
 
         try {
           const results = await callGemini(prompt);
-          setKbSuggestions(results.length ? results : DEFAULT_REPLIES);
-        } catch {
-          setKbSuggestions(DEFAULT_REPLIES);
+          setKbSuggestions(results);
+        } catch (err) {
+          setKbError(err.message || "Failed to generate replies.");
         } finally {
           setKbLoading(false);
         }
@@ -475,7 +458,7 @@ Generate 3 short, ultra-natural human replies that keep the chat going. Provide 
         pressTimerRef.current = setTimeout(() => {
           setPressingId(null);
           setDetectedBubble(msg);
-          triggerToast("Detected message! Generating human replies...");
+          triggerToast("Detected message! Generating matching replies...");
           detectAndGenerateForKeyboard(msg.text);
         }, 500);
       };
@@ -534,14 +517,16 @@ Generate 3 short, ultra-natural human replies that keep the chat going. Provide 
         }, 1200);
       };
 
-      const handleGenerateTopics = async (topicId) => {
+      const handleGenerateTopics = async (topicId, overrideLang = null) => {
+        const activeLang = overrideLang || language;
         setSelectedTopic(topicId);
         setTopicLoading(true);
+        setTopicError("");
         setTopicIdeas([]);
         const topicObj = TOPIC_CATEGORIES.find((t) => t.id === topicId);
 
         const prompt = `Generate 4 natural, human conversation starters for: "${topicObj?.title}" (${topicObj?.desc}).
-${getLanguageRule(language)}
+${getLanguageRule(activeLang)}
 ${humanStyleRule}
 Return 4 items with "reply" (the exact message to send), "translation" (English meaning), "whyItWorks" (why it gets a long reply), and "tone" (2-word vibe).`;
 
@@ -549,8 +534,7 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
           const results = await callGemini(prompt);
           setTopicIdeas(results);
         } catch (err) {
-          setTopicIdeas(DEFAULT_REPLIES);
-          triggerToast(err.message);
+          setTopicError(err.message || "Could not load conversation starters.");
         } finally {
           setTopicLoading(false);
         }
@@ -745,7 +729,7 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                   {isLoading ? (
                     <>
                       <Icon name="refresh" className="w-4 h-4 animate-spin" />
-                      <span>Writing natural human replies...</span>
+                      <span>Writing matching human replies...</span>
                     </>
                   ) : (
                     <>
@@ -878,7 +862,7 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                       key={opt.id}
                       onClick={() => {
                         setLanguage(opt.id);
-                        if (detectedBubble) detectAndGenerateForKeyboard(detectedBubble.text);
+                        if (detectedBubble) detectAndGenerateForKeyboard(detectedBubble.text, opt.id);
                       }}
                       className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold border transition ${
                         language === opt.id
@@ -967,9 +951,15 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                         </button>
                       </div>
 
+                      {kbError && (
+                        <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-[10px] text-rose-300">
+                          {kbError}
+                        </div>
+                      )}
+
                       {kbLoading ? (
                         <div className="py-3 text-center text-[11px] text-slate-400">
-                          Detecting vibe & drafting human replies...
+                          Detecting vibe & drafting matching replies...
                         </div>
                       ) : (
                         <div className="space-y-1.5">
@@ -1066,7 +1056,7 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                         key={opt.id}
                         onClick={() => {
                           setLanguage(opt.id);
-                          handleGenerateTopics(selectedTopic);
+                          handleGenerateTopics(selectedTopic, opt.id);
                         }}
                         className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold border transition ${
                           language === opt.id
@@ -1107,6 +1097,12 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                     Fresh Starters
                   </button>
                 </div>
+
+                {topicError && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300">
+                    {topicError}
+                  </div>
+                )}
 
                 {topicLoading ? (
                   <div className="py-10 text-center text-xs text-slate-400 space-y-2">
@@ -1342,7 +1338,7 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                       type="password"
                       value={customApiKey}
                       onChange={(e) => setCustomApiKey(e.target.value)}
-                      placeholder="Paste AQ... or AIzaSy... key here"
+                      placeholder="Paste AIzaSy... or AQ... key here"
                       className="flex-1 bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-lg px-2.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none"
                     />
                     {customApiKey && (
