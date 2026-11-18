@@ -66,7 +66,8 @@
         key: <><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></>,
         smartphone: <><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></>,
         hand: <><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></>,
-        deleteKey: <><path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"/><line x1="18" x2="12" y1="9" y2="15"/><line x1="12" x2="18" y1="9" y2="15"/></>
+        deleteKey: <><path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"/><line x1="18" x2="12" y1="9" y2="15"/><line x1="12" x2="18" y1="9" y2="15"/></>,
+        expand: <><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></>
       };
 
       return (
@@ -187,7 +188,7 @@
       }
     ];
 
-    const QUICK_PROMPTS = [
+    const REPLY_PROMPTS = [
       "Em chesthunnav?",
       "Nothing much, bore kodthundi",
       "Haha",
@@ -196,11 +197,27 @@
       "Naku nidra ravatle"
     ];
 
+    const EXPAND_PROMPTS = [
+      "What are you doing?",
+      "Em chesthunnav?",
+      "Tinava?",
+      "Good night",
+      "Miss you",
+      "Busy ah?"
+    ];
+
+    const FIRST_CHAT_PROMPTS = [
+      "Seen their Instagram story",
+      "First text to college/office crush",
+      "Saying Hi after a long time",
+      "Complimenting their smile/photo"
+    ];
+
     const VIBE_OPTIONS = [
       { id: "playful", label: "Playful & Teasing", desc: "Funny, casual banter", icon: "smile", color: "text-amber-400" },
       { id: "cute", label: "Cute & Sweet", desc: "Warm, caring, genuine", icon: "heart", color: "text-pink-400" },
       { id: "bold", label: "Bold & Flirty", desc: "Confident, smooth rizz", icon: "flame", color: "text-rose-500" },
-      { id: "romantic", label: "Deep & Romantic", desc: "Late-night real connection", icon: "sparkles", color: "text-purple-400" }
+      { id: "romantic", label: "Deep & Romantic", desc: "Crazy romantic, late-night vibe", icon: "sparkles", color: "text-purple-400" }
     ];
 
     const LANG_OPTIONS = [
@@ -224,6 +241,8 @@
 
     function App() {
       const [activeTab, setActiveTab] = useState("reply");
+      // Mode inside main tab: 'reply' (Reply to them) | 'expand' (Expand my boring text) | 'first' (1st Chat Start)
+      const [wingmanMode, setWingmanMode] = useState("reply");
       const [incomingMsg, setIncomingMsg] = useState("");
       const [contextNote, setContextNote] = useState("");
       const [vibe, setVibe] = useState("playful");
@@ -286,7 +305,7 @@
           throw new Error("Tap 'Add API Key' at the top right and paste your free Gemini API key first.");
         }
 
-        // Exact model recommended by Google's API for new keys: gemini-3.5-flash-lite
+        // Exact working models verified for your API key
         const modelsToTry = [
           "gemini-3.5-flash-lite",
           "gemini-3.5-flash"
@@ -382,18 +401,22 @@
       };
 
       const humanStyleRule = `HUMAN TEXTING STYLE RULES (CRITICAL — MUST SOUND 100% HUMAN, NEVER LIKE AI):
-- Your reply MUST directly answer and match the exact words, context, and meaning of the incoming message! Never give a generic or unrelated reply.
 - Sound like a real 23-year-old texting on WhatsApp or Instagram, NOT a movie dialogue writer, poet, or AI chatbot.
-- Keep messages crisp, natural, and realistic (1 to 2 short sentences max).
+- Keep messages crisp, natural, and realistic (1 to 2 sentences max).
 - NEVER use cheesy poetic lines, heavy metaphors, or overly formal words.
 - Use natural lowercase/casual punctuation and at most 0 or 1 subtle emoji.
-- Include a natural conversational hook (a light question or teasing statement) directly tied to what they just said.`;
+- Include a natural conversational hook so the other person wants to reply and keep chatting long.`;
 
       const handleGenerateReplies = async (overrideMsg = null, overrideLang = null) => {
         const targetMsg = (overrideMsg !== null ? overrideMsg : incomingMsg).trim();
         const activeLang = overrideLang || language;
-        if (!targetMsg) {
-          setErrorMsg("Paste or type the message they sent first!");
+
+        if (!targetMsg && wingmanMode !== "first") {
+          setErrorMsg(
+            wingmanMode === "expand"
+              ? "Type a short message you want to expand first (e.g. 'What are you doing?')!"
+              : "Paste or type the message they sent first!"
+          );
           return;
         }
         setErrorMsg("");
@@ -401,7 +424,46 @@
         setGeneratedReplies([]);
 
         const vibeObj = VIBE_OPTIONS.find((v) => v.id === vibe);
-        const prompt = `You are a real human friend helping someone reply to their crush/partner on WhatsApp or Instagram.
+        let prompt = "";
+
+        if (wingmanMode === "expand") {
+          prompt = `You are a real human friend helping someone upgrade a boring, common text message into a crazy, romantic, flirty, unforgettable message to send to their crush/partner on WhatsApp or Instagram.
+Common/plain message the user wants to send: "${targetMsg}"
+Extra context: "${contextNote || "Want to turn this plain line into something crazy romantic, flirty, and engaging"}"
+Desired Vibe: ${vibeObj?.label} (${vibeObj?.desc})
+
+${getLanguageRule(activeLang)}
+
+${humanStyleRule}
+
+EXPAND & UPGRADE RULES:
+- Take the core meaning of "${targetMsg}" (for example, if they typed "What are you doing?", keep the "what are you doing / thinking about" idea) and expand it into a rich, crazy flirty, romantic, teasing 2-sentence text that makes their heart skip a beat and forces a long, fun reply!
+- Do NOT send a boring 3-word text—make it expressive, charming, playful, and 100% natural human texting.
+
+Generate 3 distinct, expanded human message options.
+For each option provide:
+- "reply": the exact expanded message to copy and send
+- "translation": clear English meaning (if reply is already Pure English, give a quick note on the subtext/vibe)
+- "whyItWorks": 1 short sentence explaining why this expanded message is way better than a boring text
+- "tone": 2-word tag (e.g. "Crazy Flirty", "Sweet & Romantic", "Playful Tease")`;
+        } else if (wingmanMode === "first") {
+          prompt = `You are a real human friend helping someone send the VERY FIRST message to start a romantic/flirty conversation on WhatsApp or Instagram.
+Situation / Topic: "${targetMsg || "Starting a first chat with a crush"}"
+Extra context: "${contextNote || "First message icebreaker"}"
+Desired Vibe: ${vibeObj?.label} (${vibeObj?.desc})
+
+${getLanguageRule(activeLang)}
+
+${humanStyleRule}
+
+Generate 3 distinct, natural human first-message openers that get an instant reply (never boring "Hi" or "Hello").
+For each option provide:
+- "reply": the exact first message to copy and send
+- "translation": clear English meaning
+- "whyItWorks": 1 short sentence explaining why this opener works
+- "tone": 2-word tag (e.g. "Smooth Opener", "Playful Hook", "Bold First Move")`;
+        } else {
+          prompt = `You are a real human friend helping someone reply to their crush/partner on WhatsApp or Instagram.
 Incoming message from them: "${targetMsg}"
 Extra context: "${contextNote || "Casual chat"}"
 Desired Vibe: ${vibeObj?.label} (${vibeObj?.desc})
@@ -410,12 +472,14 @@ ${getLanguageRule(activeLang)}
 
 ${humanStyleRule}
 
-Generate 3 distinct, natural human reply options that directly respond to "${targetMsg}".
+Your reply MUST directly answer and match the exact words, context, and meaning of "${targetMsg}".
+Generate 3 distinct, natural human reply options.
 For each option provide:
 - "reply": the exact text message to copy and send
 - "translation": clear English meaning (if reply is already Pure English, give a quick note on the subtext/vibe)
 - "whyItWorks": 1 short sentence explaining why this matches their message and keeps the chat going
 - "tone": 2-word tag (e.g. "Casual Tease", "Sweet & Real", "Smooth Flirt")`;
+        }
 
         try {
           const results = await callGemini(prompt);
@@ -473,7 +537,7 @@ Generate 3 short, ultra-natural human replies that directly match and answer "${
           const text = await navigator.clipboard.readText();
           if (text && text.trim()) {
             setIncomingMsg(text.trim());
-            triggerToast("Detected copied message! Generating replies...");
+            triggerToast("Detected copied message! Generating...");
             handleGenerateReplies(text.trim());
           } else {
             triggerToast("Clipboard is empty—copy a chat message first!");
@@ -568,6 +632,13 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
 
       const isSaved = (text) => savedLines.some((s) => s.reply === text);
 
+      const activeQuickPrompts =
+        wingmanMode === "expand"
+          ? EXPAND_PROMPTS
+          : wingmanMode === "first"
+          ? FIRST_CHAT_PROMPTS
+          : REPLY_PROMPTS;
+
       return (
         <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col max-w-md mx-auto border-x border-slate-800/80 shadow-2xl relative pb-24">
           {/* Floating Toast Notification */}
@@ -610,23 +681,81 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
 
           {/* Main Content Area */}
           <main className="flex-1 px-4 pt-4 space-y-5">
-            {/* TAB 1: REPLY WINGMAN */}
+            {/* TAB 1: REPLY / EXPAND / 1ST CHAT WINGMAN */}
             {activeTab === "reply" && (
               <>
+                {/* 3-Way Action Mode Switcher */}
+                <div className="grid grid-cols-3 gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+                  <button
+                    onClick={() => {
+                      setWingmanMode("reply");
+                      setGeneratedReplies([]);
+                      setErrorMsg("");
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+                      wingmanMode === "reply"
+                        ? "bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <Icon name="message" className="w-3.5 h-3.5" />
+                    <span>Reply</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setWingmanMode("expand");
+                      setGeneratedReplies([]);
+                      setErrorMsg("");
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+                      wingmanMode === "expand"
+                        ? "bg-gradient-to-r from-purple-600 to-rose-500 text-white shadow-md"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <Icon name="expand" className="w-3.5 h-3.5" />
+                    <span>Expand Msg</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setWingmanMode("first");
+                      setGeneratedReplies([]);
+                      setErrorMsg("");
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+                      wingmanMode === "first"
+                        ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    <Icon name="sparkles" className="w-3.5 h-3.5" />
+                    <span>1st Chat</span>
+                  </button>
+                </div>
+
+                {/* Input Box */}
                 <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <label className="text-xs font-semibold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
-                      <Icon name="message" className="w-3.5 h-3.5" />
-                      What did they text you?
+                      <Icon name={wingmanMode === "expand" ? "expand" : "message"} className="w-3.5 h-3.5" />
+                      {wingmanMode === "expand"
+                        ? "Type your boring / short message:"
+                        : wingmanMode === "first"
+                        ? "Who or what is the 1st message for?"
+                        : "What did they text you?"}
                     </label>
                     <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={handlePasteFromClipboard}
-                        className="flex items-center gap-1 text-[11px] font-medium bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/30 px-2.5 py-1 rounded-lg transition"
-                      >
-                        <Icon name="clipboard" className="w-3 h-3" />
-                        Auto-Detect
-                      </button>
+                      {wingmanMode === "reply" && (
+                        <button
+                          onClick={handlePasteFromClipboard}
+                          className="flex items-center gap-1 text-[11px] font-medium bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/30 px-2.5 py-1 rounded-lg transition"
+                        >
+                          <Icon name="clipboard" className="w-3 h-3" />
+                          Auto-Detect
+                        </button>
+                      )}
                       {incomingMsg && (
                         <button
                           onClick={() => setIncomingMsg("")}
@@ -642,12 +771,18 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                     rows={2}
                     value={incomingMsg}
                     onChange={(e) => setIncomingMsg(e.target.value)}
-                    placeholder='Paste their text here... e.g. "Em chesthunnav?" or "Nothing much, bored"'
+                    placeholder={
+                      wingmanMode === "expand"
+                        ? 'e.g. "What are you doing?" or "Em chesthunnav?" — I will make it crazy flirty & romantic!'
+                        : wingmanMode === "first"
+                        ? 'e.g. "Replying to her Instagram story" or leave blank for top openers...'
+                        : 'Paste their text here... e.g. "Em chesthunnav?" or "Nothing much, bored"'
+                    }
                     className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 rounded-xl p-3 text-sm text-white placeholder-slate-500 focus:outline-none transition resize-none"
                   />
 
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                    {QUICK_PROMPTS.map((qp) => (
+                    {activeQuickPrompts.map((qp) => (
                       <button
                         key={qp}
                         onClick={() => setIncomingMsg(qp)}
@@ -662,7 +797,11 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                     type="text"
                     value={contextNote}
                     onChange={(e) => setContextNote(e.target.value)}
-                    placeholder="Optional context (e.g., crush, late night, first chat)"
+                    placeholder={
+                      wingmanMode === "expand"
+                        ? "Optional: make it extra crazy romantic, late night, or teasing..."
+                        : "Optional context (e.g., crush, late night, first chat)"
+                    }
                     className="w-full bg-slate-950/70 border border-slate-800/80 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none"
                   />
                 </div>
@@ -729,12 +868,24 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                   {isLoading ? (
                     <>
                       <Icon name="refresh" className="w-4 h-4 animate-spin" />
-                      <span>Writing matching human replies...</span>
+                      <span>
+                        {wingmanMode === "expand"
+                          ? "Expanding into crazy flirty lines..."
+                          : wingmanMode === "first"
+                          ? "Crafting 1st chat openers..."
+                          : "Writing matching human replies..."}
+                      </span>
                     </>
                   ) : (
                     <>
-                      <Icon name="wand" className="w-4 h-4" />
-                      <span>Generate Human Replies</span>
+                      <Icon name={wingmanMode === "expand" ? "expand" : "wand"} className="w-4 h-4" />
+                      <span>
+                        {wingmanMode === "expand"
+                          ? "Expand Into Crazy Flirty / Romantic"
+                          : wingmanMode === "first"
+                          ? "Generate 1st Chat Openers"
+                          : "Generate Human Replies"}
+                      </span>
                     </>
                   )}
                 </button>
@@ -1036,7 +1187,7 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                     Using With WhatsApp & Instagram on Android
                   </h3>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Long-press any message in WhatsApp or Instagram → tap <strong className="text-slate-200">Copy</strong> → switch to RizzTenglish and tap <strong className="text-rose-300">Auto-Detect</strong> in the AI Reply tab for instant replies!
+                    Long-press any message in WhatsApp or Instagram → tap <strong className="text-slate-200">Copy</strong> → switch to RizzTenglish and tap <strong className="text-rose-300">Auto-Detect</strong> in the Reply tab for instant replies!
                   </p>
                 </div>
               </div>
@@ -1251,7 +1402,7 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
                   <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400">Rule #1</span>
                   <h3 className="text-sm font-bold text-white">Stop Asking Boring Interview Questions</h3>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Avoid repeating "Tinava?", "Em chesthunnav?", "Work ela undi?". Instead, make playful assumptions: <span className="text-rose-300">"Nuvvu pakka ippudu series chusthu time pass chesthunnav kada?"</span>
+                    Avoid repeating "Tinava?", "Em chesthunnav?", "Work ela undi?". Instead, use <strong className="text-white">Expand Msg</strong> to turn plain questions into playful, romantic texts!
                   </p>
                 </div>
 
@@ -1277,7 +1428,7 @@ Return 4 items with "reply" (the exact message to send), "translation" (English 
           {/* Bottom Navigation Bar */}
           <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/90 px-1.5 py-2 flex items-center justify-around z-30">
             {[
-              { id: "reply", label: "AI Reply", icon: "wand" },
+              { id: "reply", label: "Wingman", icon: "wand" },
               { id: "keyboard", label: "Keyboard", icon: "keyboard" },
               { id: "topics", label: "Long Chat", icon: "compass" },
               { id: "vault", label: "Vault", icon: "book" },
