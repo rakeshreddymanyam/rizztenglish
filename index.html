@@ -13,14 +13,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- React & Babel for single-file GitHub Pages execution -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: #020617;
       color: #f1f5f9;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    textarea, input {
+      user-select: text;
     }
     .no-scrollbar::-webkit-scrollbar {
       display: none;
@@ -29,1147 +35,1312 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fadeIn {
-      animation: fadeIn 0.25s ease-out forwards;
-    }
   </style>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center selection:bg-rose-500 selection:text-white pb-24">
+<body class="bg-slate-950 text-slate-100 antialiased selection:bg-rose-500 selection:text-white">
+  <div id="root"></div>
 
-  <!-- ====================================================================
-       MOBILE APP TOP HEADER (ANDROID APP FEEL)
-  ==================================================================== -->
-  <header class="w-full max-w-lg sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-2.5">
-      <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-600 via-pink-500 to-amber-400 flex items-center justify-center shadow-lg shadow-rose-500/25">
-        <i data-lucide="heart" class="w-5 h-5 text-white fill-white"></i>
-      </div>
-      <div>
-        <div class="flex items-center gap-1.5">
-          <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-pink-100 to-rose-300 bg-clip-text text-transparent">
-            RizzTenglish
-          </h1>
-          <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-            AI Wingman
-          </span>
-        </div>
-        <p class="text-xs text-slate-400">Telugu + English Romantic Chat Assistant</p>
-      </div>
-    </div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
 
-    <button
-      id="openModalBtn"
-      class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-xs font-semibold text-emerald-300 transition active:scale-95"
-      title="Host on GitHub Pages & Install Free"
-    >
-      <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-400"></i>
-      <span>GitHub Live</span>
-    </button>
-  </header>
+    // Clean inline SVG Icons
+    const Icon = ({ name, className = "w-4 h-4" }) => {
+      const icons = {
+        heart: <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />,
+        sparkles: <><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></>,
+        message: <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />,
+        copy: <><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>,
+        check: <path d="M20 6 9 17l-5-5" />,
+        refresh: <><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></>,
+        flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />,
+        smile: <><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></>,
+        bookmark: <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />,
+        trash: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></>,
+        compass: <><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></>,
+        book: <><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>,
+        wand: <><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></>,
+        x: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>,
+        keyboard: <><rect width="20" height="16" x="2" y="4" rx="2" ry="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></>,
+        clipboard: <><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></>,
+        send: <><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></>,
+        globe: <><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></>,
+        key: <><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></>,
+        smartphone: <><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></>,
+        hand: <><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></>,
+        deleteKey: <><path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"/><line x1="18" x2="12" y1="9" y2="15"/><line x1="12" x2="18" y1="9" y2="15"/></>
+      };
 
-  <!-- ====================================================================
-       MAIN SCROLLABLE CONTENT AREA
-  ==================================================================== -->
-  <main id="appMain" class="w-full max-w-lg px-4 pt-4 flex-1 space-y-5"></main>
-
-  <!-- ====================================================================
-       ANDROID BOTTOM NAVIGATION BAR
-  ==================================================================== -->
-  <nav class="fixed bottom-0 left-0 right-0 z-30 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/90 px-2 py-2 flex justify-center">
-    <div id="bottomNav" class="w-full max-w-lg grid grid-cols-5 gap-1"></div>
-  </nav>
-
-  <!-- ====================================================================
-       GITHUB PAGES & ANDROID INSTALL MODAL
-  ==================================================================== -->
-  <div id="androidModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl my-auto max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <i data-lucide="globe" class="w-5 h-5 text-emerald-400"></i>
-          <h3 class="font-bold text-base text-white">Host Free on GitHub Pages</h3>
-        </div>
-        <button id="closeModalBtn" class="p-1.5 rounded-full bg-slate-800 text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <!-- Step 1: Free Gemini API Key -->
-      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
-            Step 1: Free Gemini API Key
-          </span>
-          <a
-            href="https://aistudio.google.com/apikey"
-            target="_blank"
-            rel="noreferrer"
-            class="text-[11px] text-sky-400 hover:underline flex items-center gap-1 font-semibold"
-          >
-            Get Free Key <i data-lucide="external-link" class="w-3 h-3"></i>
-          </a>
-        </div>
-        <p class="text-[11px] text-slate-400 leading-relaxed">
-          Grab a free key from Google AI Studio and paste it below (saved privately in your phone's browser):
-        </p>
-        <div class="flex gap-2">
-          <input
-            id="apiKeyInput"
-            type="password"
-            placeholder="AIzaSy... (Saved only on your phone)"
-            class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500"
-          />
-          <button
-            id="clearKeyBtn"
-            class="px-2.5 py-2 rounded-xl bg-slate-800 text-[11px] text-rose-300"
-          >
-            Clear
-          </button>
-        </div>
-        <div id="keySavedToast" class="hidden text-[11px] text-emerald-400 font-medium">
-          ✓ Saved locally on your device!
-        </div>
-      </div>
-
-      <!-- Step 2: GitHub Pages Setup -->
-      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-        <div class="text-xs font-bold text-rose-300">
-          Step 2: Upload to GitHub Pages (100% Free)
-        </div>
-        <ol class="text-[11px] text-slate-300 space-y-1.5 list-decimal list-inside leading-relaxed">
-          <li>Go to <strong>github.com</strong> → Create a new <strong>Public</strong> repository (e.g. <code class="text-amber-300">rizztenglish</code>).</li>
-          <li>Tap <strong>Add file → Create new file</strong>, name it <code class="text-emerald-300">index.html</code>, paste this entire file, and click <strong>Commit changes</strong>.</li>
-          <li>Open repository <strong>Settings → Pages</strong> → Under <em>Branch</em> select <strong>main</strong> → click <strong>Save</strong>.</li>
-          <li>Wait 1 minute and your free live link (<code class="text-sky-300">yourusername.github.io/rizztenglish</code>) is ready!</li>
-        </ol>
-      </div>
-
-      <!-- Step 3: Install on Android Home Screen -->
-      <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-        <div class="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-          <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
-          Step 3: Install on Android Home Screen
-        </div>
-        <ol class="text-[11px] text-slate-300 space-y-1.5 list-decimal list-inside leading-relaxed">
-          <li>Open your GitHub Pages link in <strong>Google Chrome</strong> on Android.</li>
-          <li>Tap the <strong>three dots (⋮)</strong> in the top-right corner.</li>
-          <li>Tap <strong>"Add to Home screen"</strong> → <strong>"Install"</strong>.</li>
-        </ol>
-      </div>
-
-      <button
-        id="doneModalBtn"
-        class="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition"
-      >
-        Done & Start Using
-      </button>
-    </div>
-  </div>
-
-  <script>
-    // ============================================================================
-    // DATA & CONSTANTS
-    // ============================================================================
-    const CURATED_LINES = [
-      {
-        id: 1,
-        category: 'Cute & Sweet',
-        tenglish: "Nuvvu online lo unte, naa phone battery kante naa heart beat ekkuva fast ga peruguthundi.",
-        english: "When you're online, my heartbeat races faster than my phone battery drains.",
-        context: "Great when they just came online or replied quickly."
-      },
-      {
-        id: 2,
-        category: 'Witty & Playful',
-        tenglish: "Google Maps lo kuda dorakani oka place undi... adi nee manasu. Koncham directions isthava?",
-        english: "There's one place even Google Maps can't find... your heart. Mind giving me directions?",
-        context: "Lighthearted icebreaker to make them smile."
-      },
-      {
-        id: 3,
-        category: 'Keep It Going',
-        tenglish: "Sare, serious question: Nuvvu coffee person ah leka chai person ah? Deeni batti mana future dates decide avthayi!",
-        english: "Okay, serious question: Are you a coffee person or a chai person? Our future dates depend on this!",
-        context: "Smoothly transitions small talk into hinting at a date."
-      },
-      {
-        id: 4,
-        category: 'Deep & Romantic',
-        tenglish: "Roju motham entha busy ga unna, neetho oka 5 minutes matladithe chalu, stress antha mayam aipothundi.",
-        english: "No matter how busy my whole day is, talking to you for just 5 minutes makes all the stress vanish.",
-        context: "Late-night conversations when things get cozy."
-      },
-      {
-        id: 5,
-        category: 'Bold & Flirty',
-        tenglish: "Nuvvu navvuthe chala baguntav ani telusu, kani aa navvuki reason nenu aithe inka baguntundi kadha?",
-        english: "I know you look amazing when you smile, wouldn't it be even better if I was the reason behind it?",
-        context: "When they send 'haha' or a laughing emoji."
-      },
-      {
-        id: 6,
-        category: 'Teasing',
-        tenglish: "Abba, inni rojulu ekkada daakkunnav? Naa playlist lo romantic songs anni waste aipothunnayi neekosam.",
-        english: "Where have you been hiding all this time? All the romantic songs in my playlist were going to waste waiting for you.",
-        context: "Playful teasing after a fun banter."
-      },
-      {
-        id: 7,
-        category: 'Keep It Going',
-        tenglish: "Ee weekend plans enti? Boring ga intlo kurchuntava leka natho kalisi edo crazy plan cheddama?",
-        english: "What are your weekend plans? Sitting bored at home or shall we make a crazy plan together?",
-        context: "Moving the conversation from texting to meeting up."
-      },
-      {
-        id: 8,
-        category: 'Cute & Sweet',
-        tenglish: "Nuvvu 'Hmm' ante naaku ardham kaadu... kani nuvvu type chesthunnappudu vache 'typing...' chusthe matram chala happy ga untundi.",
-        english: "When you say 'Hmm' I don't get it... but seeing 'typing...' when you're replying makes me genuinely happy.",
-        context: "Great rescue when they give a dry 'Hmm' or 'K' reply!"
-      }
-    ];
-
-    const VIBES = [
-      { id: 'playful', label: 'Playful & Teasing', icon: 'smile', color: 'from-amber-500 to-orange-500', desc: 'Light, funny, cheeky banter' },
-      { id: 'sweet', label: 'Cute & Sweet', icon: 'heart', color: 'from-pink-500 to-rose-500', desc: 'Warm, caring, wholesome charm' },
-      { id: 'bold', label: 'Bold & Flirty', icon: 'flame', color: 'from-red-500 to-pink-600', desc: 'Confident, smooth, direct rizz' },
-      { id: 'deep', label: 'Deep & Romantic', icon: 'message-circle-heart', color: 'from-purple-500 to-indigo-600', desc: 'Meaningful, late-night vibes' },
-    ];
-
-    const LANGUAGES = [
-      { id: 'tenglish', label: 'Tenglish Mix', badge: 'Telugu + English' },
-      { id: 'english', label: 'Pure English', badge: 'Smooth English' },
-      { id: 'both', label: 'Both Options', badge: 'Side-by-Side' },
-    ];
-
-    // ============================================================================
-    // APP STATE
-    // ============================================================================
-    const state = {
-      activeTab: 'wingman',
-      herMessage: '',
-      contextNote: '',
-      selectedVibe: 'playful',
-      selectedLang: 'tenglish',
-      isGenerating: false,
-      generatedReplies: [],
-      errorMsg: '',
-      clipboardBanner: '',
-      // Keyboard Mode
-      keyboardEnabled: false,
-      kbVibe: 'playful',
-      kbLang: 'tenglish',
-      kbChatInput: '',
-      kbMessages: [
-        { id: 1, sender: 'them', text: 'Em chesthunnav? Boring ga undi 😴' },
-        { id: 2, sender: 'me', text: 'Ippude nee gurinchi alochisthunna, perfect timing!' },
-        { id: 3, sender: 'them', text: 'Haha abaddalu cheppaku 😂 sare kani weekend plans enti?' }
-      ],
-      longPressTarget: null,
-      kbSuggestions: [],
-      isKbLoading: false,
-      // Topics
-      topicStage: 'just_matched',
-      topicResults: [],
-      isTopicLoading: false,
-      // Vault & Saved
-      vaultFilter: 'All',
-      savedLines: JSON.parse(localStorage.getItem('rizztenglish_saved') || '[]'),
-      copiedId: null,
-      customApiKey: localStorage.getItem('rizztenglish_gemini_key') || ''
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {icons[name] || null}
+        </svg>
+      );
     };
 
-    let pressTimer = null;
-
-    // ============================================================================
-    // HELPER FUNCTIONS
-    // ============================================================================
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    async function fetchWithRetry(url, options, maxRetries = 4) {
-      let delay = 1000;
-      for (let i = 0; i < maxRetries; i++) {
-        try {
-          const response = await fetch(url, options);
-          if (!response.ok) {
-            if (response.status === 429 || response.status >= 500) {
-              throw new Error(`HTTP ${response.status}`);
-            }
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error?.message || `Request failed (${response.status})`);
-          }
-          return await response.json();
-        } catch (err) {
-          if (i === maxRetries - 1) throw err;
-          await new Promise((res) => setTimeout(res, delay));
-          delay *= 2;
-        }
-      }
-    }
-
-    function copyText(text, id) {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
-      state.copiedId = id;
-      render();
-      setTimeout(() => {
-        state.copiedId = null;
-        render();
-      }, 2000);
-    }
-
-    function toggleSaveLine(item) {
-      const exists = state.savedLines.some((s) => s.text === item.text);
-      if (exists) {
-        state.savedLines = state.savedLines.filter((s) => s.text !== item.text);
-      } else {
-        state.savedLines = [{ ...item, savedAt: Date.now() }, ...state.savedLines];
-      }
-      localStorage.setItem('rizztenglish_saved', JSON.stringify(state.savedLines));
-      render();
-    }
-
-    async function detectFromClipboard() {
-      state.clipboardBanner = '';
-      try {
-        if (navigator.clipboard && navigator.clipboard.readText) {
-          const clipText = await navigator.clipboard.readText();
-          if (clipText && clipText.trim()) {
-            state.herMessage = clipText.trim();
-            state.activeTab = 'wingman';
-            state.clipboardBanner = `Detected: "${clipText.trim().slice(0, 42)}${clipText.trim().length > 42 ? '...' : ''}"`;
-            render();
-            generateReplies();
-            return;
-          }
-        }
-        state.clipboardBanner = 'Clipboard empty—paste the copied text below!';
-      } catch {
-        state.clipboardBanner = 'Tap & hold in the box below to paste your copied text!';
-      }
-      render();
-    }
-
-    // ============================================================================
-    // GEMINI API GENERATORS
-    // ============================================================================
-    async function generateReplies(overrideText = null, mode = 'main') {
-      const targetText = overrideText !== null ? overrideText : state.herMessage;
-      if (!targetText.trim()) {
-        if (mode === 'main') {
-          state.errorMsg = 'Paste or type what they sent first so I can craft the best reply!';
-          render();
-        }
-        return;
-      }
-
-      const vibeId = mode === 'keyboard' ? state.kbVibe : state.selectedVibe;
-      const langId = mode === 'keyboard' ? state.kbLang : state.selectedLang;
-
-      if (mode === 'keyboard') {
-        state.isKbLoading = true;
-        state.kbSuggestions = [];
-      } else {
-        state.isGenerating = true;
-        state.generatedReplies = [];
-        state.errorMsg = '';
-      }
-      render();
-
-      const vibeObj = VIBES.find((v) => v.id === vibeId) || VIBES[0];
-      const langInstruction =
-        langId === 'tenglish'
-          ? 'Write natural, modern conversational Tenglish (Telugu words written in English script mixed smoothly with English, like young people in Hyderabad/Telangana/Andhra text).'
-          : langId === 'english'
-          ? 'Write smooth, natural, charismatic modern English.'
-          : 'Provide a mix of natural conversational Tenglish and smooth English.';
-
-      const systemPrompt = `You are "RizzTenglish", a charming, witty Tenglish & English dating chat wingman.
-Rules:
-1. ${langInstruction}
-2. Vibe: ${vibeObj.label} (${vibeObj.desc}).
-3. Every reply MUST include a subtle conversation hook so the chat continues effortlessly.
-4. Keep replies respectful, charming, natural, and authentic.
-5. Generate 3 distinct reply options.`;
-
-      const userPrompt = `Their message: "${targetText.trim()}"
-${mode === 'main' && state.contextNote.trim() ? `Extra context: "${state.contextNote.trim()}"` : ''}
-Generate 3 distinct reply options.`;
-
-      const payload = {
-        contents: [{ parts: [{ text: userPrompt }] }],
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'ARRAY',
-            items: {
-              type: 'OBJECT',
-              properties: {
-                tag: { type: 'STRING' },
-                replyText: { type: 'STRING' },
-                englishMeaning: { type: 'STRING' },
-                whyItWorks: { type: 'STRING' }
-              },
-              required: ['tag', 'replyText', 'englishMeaning', 'whyItWorks']
-            }
-          }
-        }
-      };
-
-      try {
-        const apiKey = state.customApiKey.trim();
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-        const result = await fetchWithRetry(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          const parsed = JSON.parse(rawText);
-          if (mode === 'keyboard') state.kbSuggestions = parsed;
-          else state.generatedReplies = parsed;
-        } else {
-          throw new Error('Could not generate replies. Check your free Gemini API key in GitHub Live settings.');
-        }
-      } catch (err) {
-        if (mode === 'keyboard') {
-          state.kbSuggestions = [
-            {
-              tag: 'Smooth Tenglish',
-              replyText: 'Nuvvu adigithe plan lekapoyina create chestha! Coffee or long drive?',
-              englishMeaning: "If you ask, I'll make a plan! Coffee or long drive?",
-              whyItWorks: 'Playfully shows interest with two fun choices.'
-            },
-            {
-              tag: 'Playful Tease',
-              replyText: 'Secret! Mundu nee plans cheppu, appudu nenu cheptha 😉',
-              englishMeaning: "Secret! Tell me yours first, then I'll tell mine.",
-              whyItWorks: 'Creates playful curiosity.'
-            }
-          ];
-        } else {
-          state.errorMsg = err.message || 'Add your free Gemini API key under "GitHub Live" at top-right to generate unlimited AI replies!';
-        }
-      } finally {
-        if (mode === 'keyboard') state.isKbLoading = false;
-        else state.isGenerating = false;
-        render();
-      }
-    }
-
-    async function generateTopics(stageId) {
-      state.topicStage = stageId;
-      state.isTopicLoading = true;
-      state.topicResults = [];
-      render();
-
-      const stageDescriptions = {
-        just_matched: 'Just started chatting / breaking the ice without boring "Hi, tinava, em chesthunnav" questions',
-        dry_chat: 'Rescuing a dry chat where they replied "Hmm", "Nothing much", or "K"',
-        late_night: 'Late night 1 AM cozy, romantic, slightly vulnerable & flirty deep talk',
-        ask_out: 'Smoothly transitioning the chat into asking them out for coffee, drive, or a movie date'
-      };
-
-      const payload = {
-        contents: [{ parts: [{ text: `Stage: ${stageDescriptions[stageId]}. Provide 4 unique messages that spark curiosity and connection.` }] }],
-        systemInstruction: {
-          parts: [{
-            text: 'You are a Tenglish & English romantic conversation expert. Generate 4 creative conversation starters in both Tenglish (Telugu written in English letters + English) and pure English.'
-          }]
-        },
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'ARRAY',
-            items: {
-              type: 'OBJECT',
-              properties: {
-                title: { type: 'STRING' },
-                tenglishMessage: { type: 'STRING' },
-                englishMessage: { type: 'STRING' },
-                followUpTip: { type: 'STRING' }
-              },
-              required: ['title', 'tenglishMessage', 'englishMessage', 'followUpTip']
-            }
-          }
-        }
-      };
-
-      try {
-        const apiKey = state.customApiKey.trim();
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-        const result = await fetchWithRetry(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) state.topicResults = JSON.parse(rawText);
-      } catch {
-        state.topicResults = [
+    const STARTER_PACKS = [
+      {
+        category: "Only Telugu (English Typing)",
+        badge: "Pure Telugu",
+        lines: [
           {
-            title: 'The Movie Character Test',
-            tenglishMessage: "Oka honest question: Nuvvu oka Telugu movie character aithe, evaru avthav? Nenu matram pakka neeku villain laaga disturb chesthu unta!",
-            englishMessage: "Honest question: If you were a movie character, who would you be? Because I'd definitely be the one playfully annoying you!",
-            followUpTip: "Whatever character they pick, tease them about one funny habit of that character."
+            text: "Nuvvu online lo unnavani telusu kani naaku matram message cheyav, em sangathi?",
+            meaning: "I know you're online, yet you don't text me—what's going on?",
+            tag: "Playful"
+          },
+          {
+            text: "Nuvvu navvithe chala baguntav telusa, oorike ila enduku serious ga untav?",
+            meaning: "You look really good when you smile, why stay so serious?",
+            tag: "Cute"
+          },
+          {
+            text: "Ee roju naku asalu bore kottatle, endukante naa mind lo motham nuvve unnav.",
+            meaning: "I'm not bored at all today because you're all over my mind.",
+            tag: "Flirty"
+          },
+          {
+            text: "Okka coffee ki kaluddhama ee week lo? Nuvvu oppukunte nene manchi place chusta.",
+            meaning: "Shall we meet for a coffee this week? If you agree, I'll pick a nice spot.",
+            tag: "Bold"
           }
-        ];
-      } finally {
-        state.isTopicLoading = false;
-        render();
+        ]
+      },
+      {
+        category: "Pure English",
+        badge: "100% English",
+        lines: [
+          {
+            text: "Be honest, are you always this interesting or are you just showing off for me?",
+            meaning: "Lighthearted teasing that sparks a playful defense.",
+            tag: "Playful"
+          },
+          {
+            text: "You have that rare vibe where talking to you feels effortless. What's your secret?",
+            meaning: "Genuine, warm compliment without trying too hard.",
+            tag: "Cute"
+          },
+          {
+            text: "I was having a super normal day until your text popped up and ruined my focus.",
+            meaning: "Smooth, direct flirting that shows high interest.",
+            tag: "Flirty"
+          },
+          {
+            text: "We should continue this over coffee instead of staring at our screens. Free this Friday?",
+            meaning: "Confident transition from texting to an in-person date.",
+            tag: "Bold"
+          }
+        ]
+      },
+      {
+        category: "Tenglish Mix (Telugu + English)",
+        badge: "Tenglish Mix",
+        lines: [
+          {
+            text: "Ippude oka crazy thought vachindi... kani mundu nuvvu free ga unnava leda cheppu?",
+            meaning: "Just had a crazy thought... tell me if you're free first.",
+            tag: "Playful"
+          },
+          {
+            text: "Nuvvu reply ichina prathi sari naa mood automatic ga set aipothundi.",
+            meaning: "Every time you reply, my mood automatically gets fixed.",
+            tag: "Cute"
+          },
+          {
+            text: "Ee weekend plans emaina unnaya, leka nannu entertain cheyadaniki free ga unnava?",
+            meaning: "Any plans this weekend, or are you free to entertain me?",
+            tag: "Flirty"
+          },
+          {
+            text: "Nuvvu naa type kaadu anukunna... kani neetho matladuthunte koncham doubt vasthundi.",
+            meaning: "I thought you weren't my type... but talking to you is making me doubt that.",
+            tag: "Bold"
+          }
+        ]
+      },
+      {
+        category: "Dry Text Rescuers",
+        badge: "Save Dead Chats",
+        lines: [
+          {
+            text: "Antha pedda message type chesi chethulu noppi pettukoku, short ga cheppu em chesthunnavo!",
+            meaning: "Telugu: Don't hurt your hands typing such a long text, tell me briefly what you're doing!",
+            tag: "Only Telugu"
+          },
+          {
+            text: "Careful, if you keep writing paragraphs like that I won't be able to keep up.",
+            meaning: "English: Sarcastic, funny callout for one-word replies.",
+            tag: "Pure English"
+          },
+          {
+            text: "Nee enthusiasm chusthunte naku bhayam vesthundi, koncham slow ga reply ivvu!",
+            meaning: "Tenglish: Seeing your enthusiasm scares me, reply a bit slower!",
+            tag: "Tenglish Mix"
+          }
+        ]
       }
-    }
+    ];
 
-    // ============================================================================
-    // RENDER VIEWS
-    // ============================================================================
-    function renderWingmanTab() {
-      const quickSamples = [
-        "Em chesthunnav? Boring ga undi",
-        "Haha nuvvu chala funny",
-        "Hmm sare",
-        "Naku nidra ravatledu"
-      ];
+    const QUICK_PROMPTS = [
+      "Em chesthunnav?",
+      "Nothing much, bore kodthundi",
+      "Haha",
+      "Hmm",
+      "Tinava?",
+      "Naku nidra ravatle"
+    ];
 
-      return `
-        <div class="space-y-5 animate-fadeIn">
-          <!-- Auto-Detect Clipboard Banner -->
-          <div class="bg-gradient-to-r from-indigo-950/90 via-slate-900 to-rose-950/80 border border-rose-500/30 rounded-3xl p-3.5 flex items-center justify-between gap-3 shadow-lg">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-9 h-9 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center shrink-0">
-                <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
+    const VIBE_OPTIONS = [
+      { id: "playful", label: "Playful & Teasing", desc: "Funny, casual banter", icon: "smile", color: "text-amber-400" },
+      { id: "cute", label: "Cute & Sweet", desc: "Warm, caring, genuine", icon: "heart", color: "text-pink-400" },
+      { id: "bold", label: "Bold & Flirty", desc: "Confident, smooth rizz", icon: "flame", color: "text-rose-500" },
+      { id: "romantic", label: "Deep & Romantic", desc: "Late-night real connection", icon: "sparkles", color: "text-purple-400" }
+    ];
+
+    const LANG_OPTIONS = [
+      { id: "telugu_only", label: "Only Telugu", sub: "English typing, 0% English" },
+      { id: "english", label: "Pure English", sub: "100% English, 0% Telugu" },
+      { id: "tenglish", label: "Tenglish Mix", sub: "Telugu + English mix" }
+    ];
+
+    const TOPIC_CATEGORIES = [
+      { id: "icebreaker", title: "First Message / Icebreakers", desc: "Start strong without boring 'Hi'" },
+      { id: "revive", title: "Revive a Dead Chat", desc: "Restart a conversation after days" },
+      { id: "latenight", title: "1 AM Deep Talks", desc: "Meaningful questions to build closeness" },
+      { id: "date", title: "Ask For A Hangout / Date", desc: "Smoothly move from chat to meeting" }
+    ];
+
+    const DEFAULT_REPLIES = [
+      {
+        reply: "Nuvvu ila silent ga unte naku bore kodthundi, em chesthunnavo cheppu mundu!",
+        translation: "If you stay silent like this I get bored, tell me what you're doing first!",
+        whyItWorks: "Sounds like a real friend/crush texting directly, not a scripted line.",
+        tone: "Casual & Playful"
+      },
+      {
+        reply: "Sare kani, ee roju nee day ela gadichindi? Edaina interesting jariginda?",
+        translation: "Anyway, how did your day go today? Did anything interesting happen?",
+        whyItWorks: "Naturally opens up the conversation so they talk about their day.",
+        tone: "Warm & Natural"
+      },
+      {
+        reply: "Nijam cheppu, ippati varaku naa gurinche alochisthunnav kada?",
+        translation: "Tell the truth, you were thinking about me until just now, right?",
+        whyItWorks: "Confident, teasing assumption that sparks a playful reply.",
+        tone: "Smooth Flirt"
+      }
+    ];
+
+    const INITIAL_CHAT_DEMO = [
+      { id: 1, sender: "them", text: "Hey! Em chesthunnav? Chala bore kodthundi ee roju 😅", time: "10:14 PM" },
+      { id: 2, sender: "me", text: "Just scrolling, nuvvu online ki vachav ga ippudu set aipothundi", time: "10:15 PM" },
+      { id: 3, sender: "them", text: "Haha avuna, mari em plans ee weekend ki?", time: "10:16 PM" }
+    ];
+
+    function App() {
+      const [activeTab, setActiveTab] = useState("reply");
+      const [incomingMsg, setIncomingMsg] = useState("");
+      const [contextNote, setContextNote] = useState("");
+      const [vibe, setVibe] = useState("playful");
+      const [language, setLanguage] = useState("telugu_only");
+      const [generatedReplies, setGeneratedReplies] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      const [errorMsg, setErrorMsg] = useState("");
+      const [copiedIndex, setCopiedIndex] = useState(null);
+
+      // Personal Gemini API Key
+      const [customApiKey, setCustomApiKey] = useState(() => {
+        try { return localStorage.getItem("rizz_gemini_api_key") || ""; } catch { return ""; }
+      });
+      const [showDeployModal, setShowDeployModal] = useState(false);
+
+      // Keyboard & Long-Press Simulator State
+      const [keyboardEnabled, setKeyboardEnabled] = useState(true);
+      const [demoMessages, setDemoMessages] = useState(INITIAL_CHAT_DEMO);
+      const [detectedBubble, setDetectedBubble] = useState(INITIAL_CHAT_DEMO[2]);
+      const [kbSuggestions, setKbSuggestions] = useState([]);
+      const [kbLoading, setKbLoading] = useState(false);
+      const [kbDraft, setKbDraft] = useState("");
+      const [pressingId, setPressingId] = useState(null);
+      const [toastMsg, setToastMsg] = useState("");
+      const pressTimerRef = useRef(null);
+
+      // Topic Sparks State
+      const [selectedTopic, setSelectedTopic] = useState("icebreaker");
+      const [topicIdeas, setTopicIdeas] = useState([]);
+      const [topicLoading, setTopicLoading] = useState(false);
+
+      // Saved Favorites
+      const [savedLines, setSavedLines] = useState(() => {
+        try {
+          const stored = localStorage.getItem("rizz_tenglish_saved");
+          return stored ? JSON.parse(stored) : [];
+        } catch {
+          return [];
+        }
+      });
+
+      useEffect(() => {
+        try { localStorage.setItem("rizz_tenglish_saved", JSON.stringify(savedLines)); } catch {}
+      }, [savedLines]);
+
+      useEffect(() => {
+        try { localStorage.setItem("rizz_gemini_api_key", customApiKey.trim()); } catch {}
+      }, [customApiKey]);
+
+      const triggerToast = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(""), 2600);
+      };
+
+      const callGemini = async (promptText) => {
+        const apiKey = customApiKey.trim();
+        if (!apiKey) {
+          throw new Error("Please tap 'GitHub Live' at the top right and paste your free Gemini API key first.");
+        }
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+        const payload = {
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                suggestions: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      reply: { type: "STRING" },
+                      translation: { type: "STRING" },
+                      whyItWorks: { type: "STRING" },
+                      tone: { type: "STRING" }
+                    },
+                    required: ["reply", "translation", "whyItWorks", "tone"]
+                  }
+                }
+              },
+              required: ["suggestions"]
+            }
+          }
+        };
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`API Error (${response.status}). Check your Gemini API key in 'GitHub Live'.`);
+        }
+
+        const data = await response.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error("Empty response from AI.");
+
+        const parsed = JSON.parse(rawText);
+        return parsed.suggestions || [];
+      };
+
+      const getLanguageRule = (langId) => {
+        if (langId === "telugu_only") {
+          return `STRICT LANGUAGE RULE — ONLY TELUGU (TYPED IN ENGLISH LETTERS):
+- Write 100% in natural spoken Telugu using English letters (transliteration, e.g., "Nuvvu em chesthunnav? Naku bore kodthundi").
+- ZERO English words allowed! Do NOT mix English words like "busy", "free", "movie", "coffee", "weekend", "bored", "cute", "miss", "think", "mood", "plan", "message", "reply" — use pure everyday Telugu words in English script instead (e.g., "pani", "khali", "cinema", "nidra", "alochisthunna", "kaburlu", "kaluddhama").
+- Do NOT use Telugu script (తెలుగు), ONLY English letters.`;
+        }
+        if (langId === "english") {
+          return `STRICT LANGUAGE RULE — PURE ENGLISH ONLY:
+- Write 100% in natural, modern conversational English.
+- ZERO Telugu words allowed (no "em", "nuvvu", "kada", "ra", "le", "mari", etc.).`;
+        }
+        return `STRICT LANGUAGE RULE — TENGLISH MIX (HYDERABAD / ANDHRA / TELANGANA CASUAL CHAT):
+- Mix natural spoken Telugu (in English letters) with casual English words just like young people text on WhatsApp/Instagram (e.g., "Nuvvu free ga unte oka coffee ki veldama?", "Nijam cheppu, nannu miss avthunnav kada?").`;
+      };
+
+      const humanStyleRule = `HUMAN TEXTING STYLE RULES (CRITICAL — MUST SOUND 100% HUMAN, NEVER LIKE AI):
+- Sound like a real 23-year-old texting on WhatsApp or Instagram, NOT a movie dialogue writer, poet, or AI chatbot.
+- Keep messages crisp, natural, and realistic (1 to 2 short sentences max).
+- NEVER use cheesy poetic lines, heavy metaphors, Shakespeare/bollywood drama, or overly formal words.
+- Use natural lowercase/casual punctuation and at most 0 or 1 subtle emoji.
+- Include a natural conversational hook (a light question or teasing statement) so the other person wants to reply and keep chatting long.`;
+
+      const handleGenerateReplies = async (overrideMsg = null, overrideLang = null) => {
+        const targetMsg = (overrideMsg !== null ? overrideMsg : incomingMsg).trim();
+        const activeLang = overrideLang || language;
+        if (!targetMsg) {
+          setErrorMsg("Paste or type the message they sent first!");
+          return;
+        }
+        setErrorMsg("");
+        setIsLoading(true);
+        setGeneratedReplies([]);
+
+        const vibeObj = VIBE_OPTIONS.find((v) => v.id === vibe);
+        const prompt = `You are a real human friend helping someone reply to their crush/partner on WhatsApp or Instagram.
+Incoming message from them: "${targetMsg}"
+Extra context: "${contextNote || "Casual chat"}"
+Desired Vibe: ${vibeObj?.label} (${vibeObj?.desc})
+
+${getLanguageRule(activeLang)}
+
+${humanStyleRule}
+
+Generate 3 distinct, natural human reply options.
+For each option provide:
+- "reply": the exact text message to copy and send
+- "translation": clear English meaning (if reply is already Pure English, give a quick note on the subtext/vibe)
+- "whyItWorks": 1 short sentence explaining why this keeps the chat going
+- "tone": 2-word tag (e.g. "Casual Tease", "Sweet & Real", "Smooth Flirt")`;
+
+        try {
+          const results = await callGemini(prompt);
+          setGeneratedReplies(results.length ? results : DEFAULT_REPLIES);
+        } catch (err) {
+          setErrorMsg(err.message || "Could not connect. Check your API key in GitHub Live.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const detectAndGenerateForKeyboard = async (msgText) => {
+        setKbLoading(true);
+        setKbSuggestions([]);
+        const vibeObj = VIBE_OPTIONS.find((v) => v.id === vibe);
+        const prompt = `Incoming WhatsApp/Instagram message: "${msgText}"
+Vibe: ${vibeObj?.label}.
+${getLanguageRule(language)}
+${humanStyleRule}
+Generate 3 short, ultra-natural human replies that keep the chat going. Provide reply, translation, whyItWorks, and tone.`;
+
+        try {
+          const results = await callGemini(prompt);
+          setKbSuggestions(results.length ? results : DEFAULT_REPLIES);
+        } catch {
+          setKbSuggestions(DEFAULT_REPLIES);
+        } finally {
+          setKbLoading(false);
+        }
+      };
+
+      const startLongPress = (msg) => {
+        if (!keyboardEnabled) {
+          triggerToast("Turn ON Rizz Keyboard toggle first!");
+          return;
+        }
+        setPressingId(msg.id);
+        pressTimerRef.current = setTimeout(() => {
+          setPressingId(null);
+          setDetectedBubble(msg);
+          triggerToast("Detected message! Generating human replies...");
+          detectAndGenerateForKeyboard(msg.text);
+        }, 500);
+      };
+
+      const cancelLongPress = () => {
+        setPressingId(null);
+        if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+      };
+
+      const handlePasteFromClipboard = async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text && text.trim()) {
+            setIncomingMsg(text.trim());
+            triggerToast("Detected copied message! Generating replies...");
+            handleGenerateReplies(text.trim());
+          } else {
+            triggerToast("Clipboard is empty—copy a chat message first!");
+          }
+        } catch {
+          triggerToast("Tap the text box and paste your copied chat!");
+        }
+      };
+
+      const handleSendDemoMessage = (textToSend) => {
+        const clean = (textToSend || kbDraft).trim();
+        if (!clean) return;
+        const newMsg = {
+          id: Date.now(),
+          sender: "me",
+          text: clean,
+          time: "Now"
+        };
+        setDemoMessages((prev) => [...prev, newMsg]);
+        setKbDraft("");
+
+        setTimeout(() => {
+          const repliesPool = [
+            "Haha nijamga? Naku teliyadu mari 😄",
+            "Sare kani, nuvvu eppudu free untavo cheppu",
+            "Abbah, baane matladuthunnav ga ee madhya 😉",
+            "Avuna, inkenti mari visheshalu?"
+          ];
+          const replyText = repliesPool[Math.floor(Math.random() * repliesPool.length)];
+          const incoming = {
+            id: Date.now() + 1,
+            sender: "them",
+            text: replyText,
+            time: "Now"
+          };
+          setDemoMessages((prev) => [...prev, incoming]);
+          if (keyboardEnabled) {
+            setDetectedBubble(incoming);
+            detectAndGenerateForKeyboard(incoming.text);
+          }
+        }, 1200);
+      };
+
+      const handleGenerateTopics = async (topicId) => {
+        setSelectedTopic(topicId);
+        setTopicLoading(true);
+        setTopicIdeas([]);
+        const topicObj = TOPIC_CATEGORIES.find((t) => t.id === topicId);
+
+        const prompt = `Generate 4 natural, human conversation starters for: "${topicObj?.title}" (${topicObj?.desc}).
+${getLanguageRule(language)}
+${humanStyleRule}
+Return 4 items with "reply" (the exact message to send), "translation" (English meaning), "whyItWorks" (why it gets a long reply), and "tone" (2-word vibe).`;
+
+        try {
+          const results = await callGemini(prompt);
+          setTopicIdeas(results);
+        } catch (err) {
+          setTopicIdeas(DEFAULT_REPLIES);
+          triggerToast(err.message);
+        } finally {
+          setTopicLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        if (activeTab === "topics" && topicIdeas.length === 0) {
+          handleGenerateTopics(selectedTopic);
+        }
+        if (activeTab === "keyboard" && kbSuggestions.length === 0 && detectedBubble) {
+          detectAndGenerateForKeyboard(detectedBubble.text);
+        }
+      }, [activeTab]);
+
+      const copyToClipboard = (text, id) => {
+        navigator.clipboard.writeText(text);
+        setCopiedIndex(id);
+        triggerToast("Copied! Paste in WhatsApp / Instagram");
+        setTimeout(() => setCopiedIndex(null), 1800);
+      };
+
+      const toggleSaveLine = (item) => {
+        const exists = savedLines.some((s) => s.reply === item.reply);
+        if (exists) {
+          setSavedLines(savedLines.filter((s) => s.reply !== item.reply));
+        } else {
+          setSavedLines([{ ...item, savedAt: Date.now() }, ...savedLines]);
+          triggerToast("Saved to Favorites!");
+        }
+      };
+
+      const isSaved = (text) => savedLines.some((s) => s.reply === text);
+
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col max-w-md mx-auto border-x border-slate-800/80 shadow-2xl relative pb-24">
+          {/* Floating Toast Notification */}
+          {toastMsg && (
+            <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border border-rose-500/50 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 backdrop-blur-md">
+              <Icon name="sparkles" className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+              <span>{toastMsg}</span>
+            </div>
+          )}
+
+          {/* Top App Bar */}
+          <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 via-pink-600 to-purple-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
+                <Icon name="heart" className="w-5 h-5 text-white fill-white" />
               </div>
-              <div class="min-w-0">
-                <div class="text-xs font-bold text-white truncate">Copied a message in WhatsApp/Insta?</div>
-                <div class="text-[11px] text-slate-300 truncate">
-                  ${escapeHtml(state.clipboardBanner || 'Tap Auto-Detect to generate instant replies')}
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h1 className="font-bold text-base tracking-tight text-white">RizzTenglish</h1>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    Human Wingman
+                  </span>
                 </div>
+                <p className="text-[11px] text-slate-400">Telugu • English • Tenglish Chat</p>
               </div>
             </div>
-            <button onclick="detectFromClipboard()" class="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-md shadow-rose-600/25 transition active:scale-95">
-              <i data-lucide="clipboard-paste" class="w-3.5 h-3.5"></i>
-              <span>Auto-Detect</span>
+
+            <button
+              onClick={() => setShowDeployModal(true)}
+              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition ${
+                customApiKey
+                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20"
+                  : "bg-rose-500/15 text-rose-300 border-rose-500/40 hover:bg-rose-500/25 animate-pulse"
+              }`}
+            >
+              <Icon name="key" className="w-3.5 h-3.5" />
+              <span>{customApiKey ? "Key Active" : "Add API Key"}</span>
             </button>
-          </div>
+          </header>
 
-          <!-- Input Card -->
-          <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl space-y-4">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <label class="text-sm font-semibold text-slate-200 flex items-center gap-1.5">
-                  <i data-lucide="message-circle-heart" class="w-4 h-4 text-rose-400"></i>
-                  What did they send you?
-                </label>
-                ${state.herMessage ? `<button onclick="state.herMessage=''; state.generatedReplies=[]; render();" class="text-xs text-slate-400 hover:text-rose-400">Clear</button>` : ''}
-              </div>
-              <textarea
-                id="herMessageInput"
-                rows="3"
-                placeholder='Paste their text here... e.g., "Em chesthunnav?" or "Haha you are crazy" or "Hmm"'
-                class="w-full bg-slate-950/90 border border-slate-700/80 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 rounded-2xl p-3.5 text-sm text-white placeholder-slate-500 outline-none transition resize-none"
-              >${escapeHtml(state.herMessage)}</textarea>
+          {/* Main Content Area */}
+          <main className="flex-1 px-4 pt-4 space-y-5">
+            {/* TAB 1: REPLY WINGMAN */}
+            {activeTab === "reply" && (
+              <>
+                <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                      <Icon name="message" className="w-3.5 h-3.5" />
+                      What did they text you?
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={handlePasteFromClipboard}
+                        className="flex items-center gap-1 text-[11px] font-medium bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 border border-rose-500/30 px-2.5 py-1 rounded-lg transition"
+                      >
+                        <Icon name="clipboard" className="w-3 h-3" />
+                        Auto-Detect
+                      </button>
+                      {incomingMsg && (
+                        <button
+                          onClick={() => setIncomingMsg("")}
+                          className="text-xs text-slate-500 hover:text-slate-300 px-1"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-              <div class="mt-2 flex flex-wrap gap-1.5">
-                <span class="text-[11px] text-slate-500 py-1">Try:</span>
-                ${quickSamples.map(s => `
-                  <button onclick="state.herMessage=${JSON.stringify(s).replace(/"/g, '&quot;')}; render();" class="text-[11px] px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition active:scale-95">
-                    "${escapeHtml(s)}"
-                  </button>
-                `).join('')}
-              </div>
-            </div>
+                  <textarea
+                    rows={2}
+                    value={incomingMsg}
+                    onChange={(e) => setIncomingMsg(e.target.value)}
+                    placeholder='Paste their text here... e.g. "Em chesthunnav?" or "Nothing much, bored"'
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 rounded-xl p-3 text-sm text-white placeholder-slate-500 focus:outline-none transition resize-none"
+                  />
 
-            <div>
-              <input
-                id="contextNoteInput"
-                type="text"
-                value="${escapeHtml(state.contextNote)}"
-                placeholder="Optional context (e.g., crush from college, late night chat, met on Hinge)"
-                class="w-full bg-slate-950/60 border border-slate-800 focus:border-pink-500/60 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 placeholder-slate-500 outline-none transition"
-              />
-            </div>
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                    {QUICK_PROMPTS.map((qp) => (
+                      <button
+                        key={qp}
+                        onClick={() => setIncomingMsg(qp)}
+                        className="shrink-0 text-[11px] bg-slate-800/80 hover:bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full border border-slate-700/70 transition"
+                      >
+                        "{qp}"
+                      </button>
+                    ))}
+                  </div>
 
-            <!-- Language Selector -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Language Style</label>
-              <div class="grid grid-cols-3 gap-2">
-                ${LANGUAGES.map(lang => {
-                  const active = state.selectedLang === lang.id;
-                  return `
-                    <button onclick="state.selectedLang='${lang.id}'; render();" class="p-2.5 rounded-2xl border text-left transition active:scale-95 ${active ? 'bg-rose-500/15 border-rose-500 text-white' : 'bg-slate-950/60 border-slate-800 text-slate-400'}">
-                      <div class="text-xs font-bold">${lang.label}</div>
-                      <div class="text-[10px] opacity-75 mt-0.5">${lang.badge}</div>
-                    </button>
-                  `;
-                }).join('')}
-              </div>
-            </div>
+                  <input
+                    type="text"
+                    value={contextNote}
+                    onChange={(e) => setContextNote(e.target.value)}
+                    placeholder="Optional context (e.g., crush, late night, first chat)"
+                    className="w-full bg-slate-950/70 border border-slate-800/80 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none"
+                  />
+                </div>
 
-            <!-- Vibe Selector -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Choose Your Vibe</label>
-              <div class="grid grid-cols-2 gap-2">
-                ${VIBES.map(vibe => {
-                  const active = state.selectedVibe === vibe.id;
-                  return `
-                    <button onclick="state.selectedVibe='${vibe.id}'; render();" class="p-3 rounded-2xl border flex items-center gap-2.5 text-left transition active:scale-95 ${active ? 'bg-slate-800/90 border-rose-500/80 text-white shadow-md' : 'bg-slate-950/60 border-slate-800 text-slate-400'}">
-                      <div class="w-8 h-8 rounded-xl bg-gradient-to-br ${vibe.color} flex items-center justify-center shrink-0">
-                        <i data-lucide="${vibe.icon}" class="w-4 h-4 text-white"></i>
-                      </div>
-                      <div class="min-w-0">
-                        <div class="text-xs font-bold truncate">${vibe.label}</div>
-                        <div class="text-[10px] text-slate-400 truncate">${vibe.desc}</div>
-                      </div>
-                    </button>
-                  `;
-                }).join('')}
-              </div>
-            </div>
+                {/* Language Selector: Only Telugu | Pure English | Tenglish Mix */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Language Style
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LANG_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setLanguage(opt.id)}
+                        className={`p-2.5 rounded-xl border text-left transition ${
+                          language === opt.id
+                            ? "bg-rose-500/15 border-rose-500 text-white shadow-sm shadow-rose-500/10"
+                            : "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                        }`}
+                      >
+                        <div className="text-xs font-semibold">{opt.label}</div>
+                        <div className="text-[10px] opacity-75 mt-0.5 leading-tight">{opt.sub}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            ${state.errorMsg ? `<div class="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300">${escapeHtml(state.errorMsg)}</div>` : ''}
+                {/* Vibe Selector */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Choose Your Vibe
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {VIBE_OPTIONS.map((v) => {
+                      const active = vibe === v.id;
+                      return (
+                        <button
+                          key={v.id}
+                          onClick={() => setVibe(v.id)}
+                          className={`p-3 rounded-xl border text-left transition flex items-start gap-2.5 ${
+                            active
+                              ? "bg-gradient-to-br from-rose-500/20 to-purple-600/20 border-rose-500/80 text-white"
+                              : "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                          }`}
+                        >
+                          <div className={`p-1.5 rounded-lg bg-slate-950 border border-slate-800 ${v.color}`}>
+                            <Icon name={v.icon} className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-slate-100 truncate">{v.label}</div>
+                            <div className="text-[10px] text-slate-400 truncate">{v.desc}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            <button onclick="generateReplies()" ${state.isGenerating ? 'disabled' : ''} class="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 hover:from-rose-500 hover:to-pink-500 disabled:opacity-60 font-bold text-sm text-white shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition active:scale-[0.98]">
-              ${state.isGenerating
-                ? `<i data-lucide="refresh-cw" class="w-4 h-4 animate-spin"></i><span>Crafting Smooth Replies...</span>`
-                : `<i data-lucide="wand-2" class="w-4 h-4"></i><span>Generate Flirty Replies</span>`
-              }
-            </button>
-          </div>
-
-          <!-- Generated Results -->
-          ${state.generatedReplies.length > 0 ? `
-            <div class="space-y-3">
-              <div class="flex items-center justify-between px-1">
-                <h2 class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
-                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> Tap to Copy & Send
-                </h2>
-                <button onclick="generateReplies()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 font-medium">
-                  <i data-lucide="refresh-cw" class="w-3 h-3"></i> Regenerate
+                <button
+                  onClick={() => handleGenerateReplies()}
+                  disabled={isLoading}
+                  className="w-full py-3.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-rose-500 via-pink-600 to-purple-600 hover:opacity-95 active:scale-[0.99] transition shadow-lg shadow-rose-600/25 flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {isLoading ? (
+                    <>
+                      <Icon name="refresh" className="w-4 h-4 animate-spin" />
+                      <span>Writing natural human replies...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="wand" className="w-4 h-4" />
+                      <span>Generate Human Replies</span>
+                    </>
+                  )}
                 </button>
-              </div>
-              ${state.generatedReplies.map((item, idx) => {
-                const uniqueKey = `gen-${idx}`;
-                const isSaved = state.savedLines.some(s => s.text === item.replyText);
-                return `
-                  <div class="bg-slate-900 border border-slate-800 hover:border-rose-500/40 rounded-3xl p-4 space-y-2.5 shadow-lg transition">
-                    <div class="flex items-center justify-between">
-                      <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/25">${escapeHtml(item.tag)}</span>
-                      <div class="flex items-center gap-1.5">
-                        <button onclick='toggleSaveLine(${JSON.stringify({ text: item.replyText, subtext: item.englishMeaning, category: item.tag }).replace(/'/g, "&#39;")})' class="p-2 rounded-xl border transition active:scale-90 ${isSaved ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-slate-800/80 border-slate-700 text-slate-400'}">
-                          <i data-lucide="bookmark" class="w-3.5 h-3.5 ${isSaved ? 'fill-amber-300' : ''}"></i>
-                        </button>
-                        <button onclick='copyText(${JSON.stringify(item.replyText).replace(/'/g, "&#39;")}, "${uniqueKey}")' class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition active:scale-95">
-                          ${state.copiedId === uniqueKey ? `<i data-lucide="check" class="w-3.5 h-3.5"></i><span>Copied!</span>` : `<i data-lucide="copy" class="w-3.5 h-3.5"></i><span>Copy</span>`}
+
+                {errorMsg && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex items-center justify-between gap-2">
+                    <span>{errorMsg}</span>
+                    {!customApiKey && (
+                      <button
+                        onClick={() => setShowDeployModal(true)}
+                        className="shrink-0 bg-rose-500 text-white font-semibold px-2.5 py-1 rounded-lg"
+                      >
+                        Add Key
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {generatedReplies.length > 0 && (
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <Icon name="sparkles" className="w-3.5 h-3.5" />
+                        Tap to Copy & Send
+                      </h2>
+                      <button
+                        onClick={() => handleGenerateReplies()}
+                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+                      >
+                        <Icon name="refresh" className="w-3 h-3" /> Regenerate
+                      </button>
+                    </div>
+
+                    {generatedReplies.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-slate-900 border border-slate-800 hover:border-rose-500/50 rounded-2xl p-4 space-y-2.5 transition shadow-md"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/25">
+                            {item.tone}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => toggleSaveLine(item)}
+                              className={`p-1.5 rounded-lg border transition ${
+                                isSaved(item.reply)
+                                  ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                                  : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              <Icon name="bookmark" className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => copyToClipboard(item.reply, `rep-${idx}`)}
+                              className="flex items-center gap-1 text-xs font-medium bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg transition"
+                            >
+                              {copiedIndex === `rep-${idx}` ? (
+                                <>
+                                  <Icon name="check" className="w-3.5 h-3.5" /> Copied
+                                </>
+                              ) : (
+                                <>
+                                  <Icon name="copy" className="w-3.5 h-3.5" /> Copy
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-sm font-medium text-white leading-relaxed">
+                          {item.reply}
+                        </p>
+
+                        {item.translation && (
+                          <p className="text-xs text-slate-400 italic border-l-2 border-slate-700 pl-2.5">
+                            Meaning: {item.translation}
+                          </p>
+                        )}
+
+                        <div className="pt-1 flex items-start gap-1.5 text-[11px] text-emerald-400/90">
+                          <Icon name="sparkles" className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>{item.whyItWorks}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* TAB 2: RIZZ KEYBOARD & LONG-PRESS DETECT */}
+            {activeTab === "keyboard" && (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-rose-500/15 via-pink-500/10 to-purple-500/15 border border-rose-500/30 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-300 shrink-0">
+                      <Icon name="keyboard" className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-white">Rizz Keyboard Mode</h2>
+                      <p className="text-[11px] text-slate-300">
+                        Long-press any message bubble below to detect & reply
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const next = !keyboardEnabled;
+                      setKeyboardEnabled(next);
+                      triggerToast(next ? "Rizz Keyboard Enabled!" : "Rizz Keyboard Paused");
+                    }}
+                    className={`w-12 h-7 rounded-full transition p-1 flex items-center shrink-0 ${
+                      keyboardEnabled ? "bg-emerald-500 justify-end" : "bg-slate-700 justify-start"
+                    }`}
+                  >
+                    <div className="w-5 h-5 rounded-full bg-white shadow-md" />
+                  </button>
+                </div>
+
+                {/* Language Quick Switcher inside Keyboard */}
+                <div className="grid grid-cols-3 gap-1.5">
+                  {LANG_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        setLanguage(opt.id);
+                        if (detectedBubble) detectAndGenerateForKeyboard(detectedBubble.text);
+                      }}
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold border transition ${
+                        language === opt.id
+                          ? "bg-rose-500/20 border-rose-500 text-rose-200"
+                          : "bg-slate-900 border-slate-800 text-slate-400"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                  <div className="bg-slate-950/90 px-3.5 py-2 border-b border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-xs font-semibold text-slate-200">Live Chat Simulator</span>
+                    </div>
+                    <span className="text-[10px] text-rose-300 flex items-center gap-1">
+                      <Icon name="hand" className="w-3 h-3" /> Hold any bubble (0.5s)
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 space-y-2.5 max-h-52 overflow-y-auto bg-slate-950/40">
+                    {demoMessages.map((m) => {
+                      const isDetected = detectedBubble?.id === m.id;
+                      const isPressing = pressingId === m.id;
+                      return (
+                        <div
+                          key={m.id}
+                          onMouseDown={() => startLongPress(m)}
+                          onMouseUp={cancelLongPress}
+                          onMouseLeave={cancelLongPress}
+                          onTouchStart={() => startLongPress(m)}
+                          onTouchEnd={cancelLongPress}
+                          className={`flex flex-col cursor-pointer transition-transform ${
+                            m.sender === "me" ? "items-end" : "items-start"
+                          } ${isPressing ? "scale-95" : ""}`}
+                        >
+                          <div
+                            className={`max-w-[82%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed border transition ${
+                              m.sender === "me"
+                                ? "bg-rose-600/90 text-white border-rose-500/50 rounded-br-sm"
+                                : "bg-slate-800 text-slate-100 border-slate-700 rounded-bl-sm"
+                            } ${isDetected && keyboardEnabled ? "ring-2 ring-amber-400/80" : ""}`}
+                          >
+                            {m.text}
+                          </div>
+                          <span className="text-[9px] text-slate-500 mt-0.5 px-1">
+                            {m.time} {isDetected && keyboardEnabled ? "• Detected" : ""}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="px-3 py-2 bg-slate-900 border-t border-slate-800 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={kbDraft}
+                      onChange={(e) => setKbDraft(e.target.value)}
+                      placeholder="Tap a Rizz chip below or type..."
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-full px-3.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                    />
+                    <button
+                      onClick={() => handleSendDemoMessage()}
+                      className="w-8 h-8 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shrink-0 transition"
+                    >
+                      <Icon name="send" className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {keyboardEnabled && (
+                    <div className="bg-slate-950 border-t border-slate-800 p-2.5 space-y-2">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-amber-400 font-semibold flex items-center gap-1 truncate max-w-[75%]">
+                          <Icon name="sparkles" className="w-3 h-3 shrink-0" />
+                          Detected: "{detectedBubble?.text}"
+                        </span>
+                        <button
+                          onClick={() => detectedBubble && detectAndGenerateForKeyboard(detectedBubble.text)}
+                          className="text-slate-400 hover:text-white flex items-center gap-1 shrink-0"
+                        >
+                          <Icon name="refresh" className={`w-3 h-3 ${kbLoading ? "animate-spin" : ""}`} />
+                          Refresh
                         </button>
                       </div>
-                    </div>
-                    <p class="text-base font-medium text-white leading-relaxed">"${escapeHtml(item.replyText)}"</p>
-                    ${item.englishMeaning && item.englishMeaning !== item.replyText ? `<p class="text-xs text-slate-400 italic">Meaning: ${escapeHtml(item.englishMeaning)}</p>` : ''}
-                    <div class="pt-2 border-t border-slate-800/80 flex items-start gap-2 text-xs text-emerald-300/90">
-                      <i data-lucide="sparkles" class="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-400"></i>
-                      <span>${escapeHtml(item.whyItWorks)}</span>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          ` : ''}
-        </div>
-      `;
-    }
 
-    function renderKeyboardTab() {
-      const kbRows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
-      return `
-        <div class="space-y-4 animate-fadeIn">
-          <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-xl">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-2xl flex items-center justify-center transition ${state.keyboardEnabled ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400' : 'bg-slate-800 border border-slate-700 text-slate-400'}">
-                  <i data-lucide="keyboard" class="w-5 h-5"></i>
-                </div>
-                <div>
-                  <h2 class="text-sm font-bold text-white flex items-center gap-2">
-                    Rizz Keyboard & Long-Press
-                    <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${state.keyboardEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}">
-                      ${state.keyboardEnabled ? 'ON' : 'OFF'}
-                    </span>
-                  </h2>
-                  <p class="text-xs text-slate-400">Turn ON, then hold any bubble to auto-detect replies</p>
-                </div>
-              </div>
-              <button onclick="state.keyboardEnabled = !state.keyboardEnabled; if(!state.keyboardEnabled){ state.longPressTarget=null; state.kbSuggestions=[]; } render();" class="w-14 h-8 rounded-full p-1 transition-colors duration-200 flex items-center shrink-0 ${state.keyboardEnabled ? 'bg-emerald-500' : 'bg-slate-700'}">
-                <div class="w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-200 ${state.keyboardEnabled ? 'translate-x-6' : 'translate-x-0'}"></div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Live Chat + Keyboard Simulator -->
-          <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-            <div class="bg-slate-950 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-pink-500 to-amber-400 flex items-center justify-center text-xs font-bold text-white">C</div>
-                <div>
-                  <div class="text-xs font-bold text-white">Crush ❤️ (Live Chat Preview)</div>
-                  <div class="text-[10px] text-emerald-400">
-                    ${state.keyboardEnabled ? '✨ Long-press any bubble below to auto-detect!' : 'Enable Rizz Keyboard above first'}
-                  </div>
-                </div>
-              </div>
-              <button onclick="addSampleKbMsg()" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">+ New Text</button>
-            </div>
-
-            <div class="p-4 space-y-2.5 max-h-60 overflow-y-auto bg-slate-950/60 select-none">
-              ${state.kbMessages.map(msg => {
-                const isSelected = state.longPressTarget && state.longPressTarget.id === msg.id;
-                return `
-                  <div
-                    onmousedown="startBubblePress(${msg.id})"
-                    onmouseup="endBubblePress()"
-                    onmouseleave="endBubblePress()"
-                    ontouchstart="startBubblePress(${msg.id})"
-                    ontouchend="endBubblePress()"
-                    oncontextmenu="event.preventDefault(); triggerBubbleDetect(${msg.id});"
-                    class="flex flex-col ${msg.sender === 'me' ? 'items-end' : 'items-start'}"
-                  >
-                    <div class="max-w-[82%] px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed cursor-pointer transition-all ${msg.sender === 'me' ? 'bg-rose-600 text-white rounded-br-sm' : 'bg-slate-800 text-slate-100 rounded-bl-sm border border-slate-700/80'} ${isSelected ? 'ring-2 ring-amber-400 scale-[1.02]' : 'active:scale-95'}">
-                      ${escapeHtml(msg.text)}
-                    </div>
-                    ${state.keyboardEnabled && msg.sender === 'them' ? `<span class="text-[10px] text-slate-500 mt-0.5 px-1">Hold bubble 0.5s to detect reply</span>` : ''}
-                  </div>
-                `;
-              }).join('')}
-            </div>
-
-            <div class="px-3 py-2 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
-              <input id="kbChatInput" type="text" value="${escapeHtml(state.kbChatInput)}" placeholder="Tap a Rizz suggestion below or type..." class="flex-1 bg-slate-900 border border-slate-800 rounded-full px-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none" />
-              <button onclick="sendKbMsg()" class="w-8 h-8 rounded-full bg-rose-600 hover:bg-rose-500 flex items-center justify-center text-white shrink-0">
-                <i data-lucide="send" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-
-            ${state.keyboardEnabled ? `
-              <div class="bg-slate-900 border-t border-rose-500/30 p-3 space-y-2.5">
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-1.5 min-w-0">
-                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
-                    <span class="text-[11px] font-bold text-rose-300 truncate">
-                      ${state.longPressTarget ? `Detected: "${escapeHtml(state.longPressTarget.text)}"` : 'Long-press any bubble above!'}
-                    </span>
-                  </div>
-                  <div class="flex items-center gap-1 shrink-0">
-                    <button onclick="toggleKbLang()" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-slate-800 text-sky-300 border border-slate-700">${state.kbLang === 'tenglish' ? 'Tenglish' : 'English'}</button>
-                    <button onclick="cycleKbVibe()" class="text-[10px] font-bold px-2 py-1 rounded-lg bg-slate-800 text-amber-300 border border-slate-700 capitalize">${state.kbVibe}</button>
-                  </div>
-                </div>
-
-                ${state.isKbLoading ? `
-                  <div class="py-3 flex items-center justify-center gap-2 text-xs text-rose-300">
-                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5 animate-spin"></i>
-                    <span>Detecting vibe & generating Tenglish replies...</span>
-                  </div>
-                ` : state.kbSuggestions.length > 0 ? `
-                  <div class="space-y-1.5">
-                    ${state.kbSuggestions.map((sug, i) => `
-                      <div class="bg-slate-950 border border-slate-800 hover:border-rose-500/50 rounded-2xl p-2.5 flex items-center justify-between gap-2">
-                        <div class="min-w-0">
-                          <span class="text-[9px] font-bold uppercase text-rose-400 block">${escapeHtml(sug.tag)}</span>
-                          <p class="text-xs text-white leading-snug">${escapeHtml(sug.replyText)}</p>
+                      {kbLoading ? (
+                        <div className="py-3 text-center text-[11px] text-slate-400">
+                          Detecting vibe & drafting human replies...
                         </div>
-                        <div class="flex items-center gap-1 shrink-0">
-                          <button onclick='state.kbChatInput=${JSON.stringify(sug.replyText).replace(/'/g, "&#39;")}; render();' class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-200">Insert</button>
-                          <button onclick='copyText(${JSON.stringify(sug.replyText).replace(/'/g, "&#39;")}, "kb-${i}")' class="p-1.5 rounded-xl bg-rose-600 text-white">
-                            ${state.copiedId === `kb-${i}` ? `<i data-lucide="check" class="w-3.5 h-3.5"></i>` : `<i data-lucide="copy" class="w-3.5 h-3.5"></i>`}
+                      ) : (
+                        <div className="space-y-1.5">
+                          {kbSuggestions.map((s, i) => (
+                            <div
+                              key={i}
+                              className="bg-slate-900 hover:bg-slate-800/90 border border-slate-800 rounded-xl p-2 flex items-center justify-between gap-2 transition"
+                            >
+                              <button
+                                onClick={() => setKbDraft(s.reply)}
+                                className="text-left text-[11px] text-slate-100 leading-snug flex-1"
+                              >
+                                {s.reply}
+                              </button>
+                              <button
+                                onClick={() => copyToClipboard(s.reply, `kb-${i}`)}
+                                className="shrink-0 bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/30 px-2 py-1 rounded-lg text-[10px] font-semibold transition"
+                              >
+                                Copy
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="pt-1 space-y-1.5 select-none">
+                        {[
+                          ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+                          ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+                          ["Z", "X", "C", "V", "B", "N", "M"]
+                        ].map((row, rIdx) => (
+                          <div key={rIdx} className="flex justify-center gap-1">
+                            {row.map((keyChar) => (
+                              <button
+                                key={keyChar}
+                                onClick={() => setKbDraft((prev) => prev + keyChar.toLowerCase())}
+                                className="flex-1 max-w-[32px] h-8 rounded-md bg-slate-800/90 hover:bg-slate-700 active:bg-rose-500 text-slate-200 text-xs font-medium shadow-sm transition"
+                              >
+                                {keyChar}
+                              </button>
+                            ))}
+                            {rIdx === 2 && (
+                              <button
+                                onClick={() => setKbDraft((prev) => prev.slice(0, -1))}
+                                className="px-2.5 h-8 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center"
+                              >
+                                <Icon name="deleteKey" className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <div className="flex gap-1.5 pt-0.5">
+                          <button
+                            onClick={() => setKbDraft((prev) => prev + " ")}
+                            className="flex-1 h-8 rounded-md bg-slate-800/90 hover:bg-slate-700 text-[11px] text-slate-400 font-medium"
+                          >
+                            Rizz Spacebar
+                          </button>
+                          <button
+                            onClick={() => handleSendDemoMessage()}
+                            className="px-4 h-8 rounded-md bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold"
+                          >
+                            Send
                           </button>
                         </div>
                       </div>
-                    `).join('')}
-                  </div>
-                ` : `
-                  <div class="py-2.5 px-3 rounded-2xl bg-slate-950/80 border border-dashed border-slate-800 text-[11px] text-slate-400 text-center">
-                    Press & hold any message bubble above for 0.5s to auto-fill replies here
-                  </div>
-                `}
-
-                <!-- Compact Keys -->
-                <div class="pt-1 space-y-1.5 select-none opacity-85">
-                  ${kbRows.map(row => `
-                    <div class="flex justify-center gap-1">
-                      ${row.split('').map(ch => `
-                        <button onclick="state.kbChatInput += '${ch.toLowerCase()}'; render();" class="h-8 flex-1 max-w-[32px] rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-rose-600 text-xs font-semibold text-slate-200 flex items-center justify-center">${ch}</button>
-                      `).join('')}
                     </div>
-                  `).join('')}
-                  <div class="flex justify-center gap-1.5 pt-0.5">
-                    <button onclick="state.kbChatInput += ' '; render();" class="h-8 flex-1 max-w-[180px] rounded-lg bg-slate-800 text-[10px] font-semibold text-slate-400">RizzTenglish Space</button>
-                    <button onclick="state.kbChatInput = state.kbChatInput.slice(0, -1); render();" class="h-8 px-3 rounded-lg bg-slate-800 text-[10px] font-bold text-rose-300">⌫</button>
-                  </div>
+                  )}
+                </div>
+
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 space-y-2">
+                  <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Icon name="smartphone" className="w-3.5 h-3.5 text-rose-400" />
+                    Using With WhatsApp & Instagram on Android
+                  </h3>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Long-press any message in WhatsApp or Instagram → tap <strong className="text-slate-200">Copy</strong> → switch to RizzTenglish and tap <strong className="text-rose-300">Auto-Detect</strong> in the AI Reply tab for instant replies!
+                  </p>
                 </div>
               </div>
-            ` : ''}
-          </div>
-        </div>
-      `;
-    }
+            )}
 
-    function renderTopicsTab() {
-      const stages = [
-        { id: 'just_matched', label: 'Break the Ice', emoji: '✨' },
-        { id: 'dry_chat', label: 'Rescue Dry Chat', emoji: '🔥' },
-        { id: 'late_night', label: '1 AM Deep Talk', emoji: '🌙' },
-        { id: 'ask_out', label: 'Ask For A Date', emoji: '☕' }
-      ];
-
-      return `
-        <div class="space-y-4 animate-fadeIn">
-          <div class="bg-gradient-to-br from-rose-950/60 via-slate-900 to-slate-900 border border-rose-500/25 rounded-3xl p-4">
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i data-lucide="compass" class="w-5 h-5 text-rose-400"></i> Endless Conversation Sparks
-            </h2>
-            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
-              Never get stuck at "Tinava?" or "Em chesthunnav?". Pick your stage to get hooks that keep them texting for hours.
-            </p>
-            <div class="grid grid-cols-2 gap-2 mt-3.5">
-              ${stages.map(st => `
-                <button onclick="generateTopics('${st.id}')" class="p-3 rounded-2xl border text-left text-xs font-semibold flex items-center gap-2 transition active:scale-95 ${state.topicStage === st.id ? 'bg-rose-600 border-rose-400 text-white shadow-md shadow-rose-600/20' : 'bg-slate-950/70 border-slate-800 text-slate-300'}">
-                  <span class="text-base">${st.emoji}</span>
-                  <span>${st.label}</span>
-                </button>
-              `).join('')}
-            </div>
-          </div>
-
-          ${state.isTopicLoading ? `
-            <div class="py-12 flex flex-col items-center justify-center text-slate-400 space-y-3">
-              <i data-lucide="refresh-cw" class="w-6 h-6 text-rose-400 animate-spin"></i>
-              <p class="text-xs font-medium">Cooking up smooth Tenglish & English topics...</p>
-            </div>
-          ` : `
-            <div class="space-y-3">
-              ${state.topicResults.map((t, idx) => `
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-md">
-                  <span class="text-xs font-bold text-amber-300 uppercase tracking-wider">${escapeHtml(t.title)}</span>
-                  <div class="bg-slate-950/90 border border-slate-800/90 rounded-2xl p-3 space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-rose-400">Tenglish Version</span>
-                      <button onclick='copyText(${JSON.stringify(t.tenglishMessage).replace(/'/g, "&#39;")}, "top-te-${idx}")' class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-lg">
-                        ${state.copiedId === `top-te-${idx}` ? `<span class="text-emerald-400">Copied</span>` : `<span>Copy</span>`}
+            {/* TAB 3: LONG CONVERSATION SPARKS */}
+            {activeTab === "topics" && (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-purple-900/40 to-rose-900/40 border border-purple-500/30 rounded-2xl p-4">
+                  <h2 className="text-sm font-bold text-white">Keep The Chat Going For Hours</h2>
+                  <p className="text-xs text-slate-300 mt-1">
+                    Pick a mood & language style to generate real human conversation starters.
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5 mt-3">
+                    {LANG_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => {
+                          setLanguage(opt.id);
+                          handleGenerateTopics(selectedTopic);
+                        }}
+                        className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold border transition ${
+                          language === opt.id
+                            ? "bg-rose-500/20 border-rose-500 text-rose-200"
+                            : "bg-slate-950/60 border-slate-800 text-slate-400"
+                        }`}
+                      >
+                        {opt.label}
                       </button>
-                    </div>
-                    <p class="text-sm text-white leading-relaxed">${escapeHtml(t.tenglishMessage)}</p>
-                  </div>
-                  <div class="bg-slate-950/60 border border-slate-800/70 rounded-2xl p-3 space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-sky-400">English Version</span>
-                      <button onclick='copyText(${JSON.stringify(t.englishMessage).replace(/'/g, "&#39;")}, "top-en-${idx}")' class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-lg">
-                        ${state.copiedId === `top-en-${idx}` ? `<span class="text-emerald-400">Copied</span>` : `<span>Copy</span>`}
-                      </button>
-                    </div>
-                    <p class="text-sm text-slate-200 leading-relaxed">${escapeHtml(t.englishMessage)}</p>
-                  </div>
-                  <div class="text-xs text-slate-400 flex items-start gap-2 pt-1">
-                    <i data-lucide="chevron-right" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
-                    <span><strong class="text-slate-200">Keep it going:</strong> ${escapeHtml(t.followUpTip)}</span>
+                    ))}
                   </div>
                 </div>
-              `).join('')}
-            </div>
-          `}
-        </div>
-      `;
-    }
 
-    function renderVaultTab() {
-      const cats = ['All', 'Saved', 'Cute & Sweet', 'Witty & Playful', 'Bold & Flirty', 'Keep It Going', 'Deep & Romantic'];
-      const filtered = state.vaultFilter === 'All'
-        ? CURATED_LINES
-        : state.vaultFilter === 'Saved'
-        ? []
-        : CURATED_LINES.filter(l => l.category === state.vaultFilter);
-
-      return `
-        <div class="space-y-4 animate-fadeIn">
-          <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i data-lucide="book-open" class="w-5 h-5 text-pink-400"></i> Tenglish & English Rizz Vault
-            </h2>
-            <span class="text-xs text-slate-400">${state.savedLines.length} Saved</span>
-          </div>
-
-          <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-            ${cats.map(cat => `
-              <button onclick="state.vaultFilter='${cat}'; render();" class="px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition ${state.vaultFilter === cat ? 'bg-rose-600 border-rose-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'}">
-                ${cat === 'Saved' ? `Saved (${state.savedLines.length})` : cat}
-              </button>
-            `).join('')}
-          </div>
-
-          ${state.vaultFilter === 'Saved' ? (
-            state.savedLines.length === 0 ? `
-              <div class="bg-slate-900/70 border border-slate-800 rounded-3xl p-8 text-center space-y-2">
-                <i data-lucide="bookmark" class="w-8 h-8 text-slate-600 mx-auto"></i>
-                <p class="text-sm font-semibold text-slate-300">No saved lines yet</p>
-                <p class="text-xs text-slate-500">Tap the bookmark icon on any reply or vault line to save it here!</p>
-              </div>
-            ` : state.savedLines.map((item, idx) => `
-              <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-2.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300">${escapeHtml(item.category || 'Favorite')}</span>
-                  <div class="flex items-center gap-1.5">
-                    <button onclick='toggleSaveLine(${JSON.stringify(item).replace(/'/g, "&#39;")})' class="p-2 rounded-xl bg-slate-800 text-rose-400">
-                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <div className="grid grid-cols-2 gap-2">
+                  {TOPIC_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleGenerateTopics(cat.id)}
+                      className={`p-3 rounded-xl border text-left transition ${
+                        selectedTopic === cat.id
+                          ? "bg-purple-500/20 border-purple-500 text-white"
+                          : "bg-slate-900/70 border-slate-800 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      <div className="text-xs font-semibold text-slate-100">{cat.title}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{cat.desc}</div>
                     </button>
-                    <button onclick='copyText(${JSON.stringify(item.text).replace(/'/g, "&#39;")}, "saved-${idx}")' class="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-semibold">
-                      ${state.copiedId === `saved-${idx}` ? 'Copied' : 'Copy'}
-                    </button>
-                  </div>
+                  ))}
                 </div>
-                <p class="text-sm font-medium text-white">"${escapeHtml(item.text)}"</p>
-                ${item.subtext ? `<p class="text-xs text-slate-400">${escapeHtml(item.subtext)}</p>` : ''}
-              </div>
-            `).join('')
-          ) : filtered.map(line => {
-            const isSaved = state.savedLines.some(s => s.text === line.tenglish);
-            return `
-              <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-md">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-pink-500/15 text-pink-300 border border-pink-500/25">${escapeHtml(line.category)}</span>
-                  <button onclick='toggleSaveLine(${JSON.stringify({ text: line.tenglish, subtext: line.english, category: line.category }).replace(/'/g, "&#39;")})' class="p-2 rounded-xl border ${isSaved ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-slate-800 border-slate-700 text-slate-400'}">
-                    <i data-lucide="bookmark" class="w-3.5 h-3.5 ${isSaved ? 'fill-amber-300' : ''}"></i>
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => handleGenerateTopics(selectedTopic)}
+                    disabled={topicLoading}
+                    className="text-xs font-medium text-purple-300 hover:text-purple-200 flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/30 px-3 py-1.5 rounded-lg"
+                  >
+                    <Icon name="refresh" className={`w-3.5 h-3.5 ${topicLoading ? "animate-spin" : ""}`} />
+                    Fresh Starters
                   </button>
                 </div>
-                <div class="space-y-1.5">
-                  <div class="flex items-center justify-between">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-rose-400">Tenglish</span>
-                    <button onclick='copyText(${JSON.stringify(line.tenglish).replace(/'/g, "&#39;")}, "v-te-${line.id}")' class="text-xs text-rose-300 hover:text-white">
-                      ${state.copiedId === `v-te-${line.id}` ? '✓ Copied' : 'Copy Tenglish'}
-                    </button>
-                  </div>
-                  <p class="text-sm font-medium text-white leading-relaxed">"${escapeHtml(line.tenglish)}"</p>
-                </div>
-                <div class="pt-2 border-t border-slate-800/80 space-y-1">
-                  <div class="flex items-center justify-between">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-sky-400">English</span>
-                    <button onclick='copyText(${JSON.stringify(line.english).replace(/'/g, "&#39;")}, "v-en-${line.id}")' class="text-xs text-slate-400 hover:text-white">
-                      ${state.copiedId === `v-en-${line.id}` ? '✓ Copied' : 'Copy English'}
-                    </button>
-                  </div>
-                  <p class="text-xs text-slate-300 leading-relaxed">"${escapeHtml(line.english)}"</p>
-                </div>
-                <div class="bg-slate-950/70 rounded-xl px-3 py-2 text-[11px] text-slate-400">
-                  💡 <strong class="text-slate-300">Best time to use:</strong> ${escapeHtml(line.context)}
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `;
-    }
 
-    function renderCoachTab() {
-      return `
-        <div class="space-y-4 animate-fadeIn">
-          <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3">
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-              <i data-lucide="user-check" class="w-5 h-5 text-emerald-400"></i> How to Keep Chats Going For Hours
-            </h2>
-            <p class="text-xs text-slate-400 leading-relaxed">
-              Master the golden rules of Tenglish & English flirting so your chats feel effortless, fun, and magnetic.
-            </p>
-            <div class="space-y-3 pt-1">
-              <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <div class="text-xs font-bold text-rose-400">1. Ditch Interview Questions</div>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                  Instead of <span class="text-slate-400 line-through">"Tinava? Em chesthunnav?"</span>, make a playful assumption: <span class="text-emerald-300">"Nuvvu pakka ippudu biryani tini lazy ga mobile chusthunnav kadha?"</span>
-                </p>
+                {topicLoading ? (
+                  <div className="py-10 text-center text-xs text-slate-400 space-y-2">
+                    <Icon name="sparkles" className="w-6 h-6 text-purple-400 mx-auto animate-pulse" />
+                    <p>Crafting real human conversation starters...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {topicIdeas.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                            {item.tone}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => toggleSaveLine(item)}
+                              className={`p-1.5 rounded-lg border ${
+                                isSaved(item.reply)
+                                  ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                                  : "bg-slate-800 border-slate-700 text-slate-400"
+                              }`}
+                            >
+                              <Icon name="bookmark" className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => copyToClipboard(item.reply, `top-${idx}`)}
+                              className="flex items-center gap-1 text-xs font-medium bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded-lg"
+                            >
+                              {copiedIndex === `top-${idx}` ? "Copied!" : "Copy"}
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-sm font-medium text-white">{item.reply}</p>
+                        {item.translation && (
+                          <p className="text-xs text-slate-400 italic">Meaning: {item.translation}</p>
+                        )}
+                        <p className="text-[11px] text-emerald-400/90">{item.whyItWorks}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <div class="text-xs font-bold text-amber-400">2. The Push-Pull Technique</div>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                  Give a sweet compliment followed by light teasing: <span class="text-emerald-300">"Nee dressing sense chala baguntundi... kani aa attitude koncham tagginchuko madam!"</span>
-                </p>
+            )}
+
+            {/* TAB 4: RIZZ VAULT & SAVED */}
+            {activeTab === "vault" && (
+              <div className="space-y-5">
+                {savedLines.length > 0 && (
+                  <div className="space-y-2.5">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                      <Icon name="bookmark" className="w-3.5 h-3.5" />
+                      Your Saved Favorites ({savedLines.length})
+                    </h2>
+                    {savedLines.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-amber-500/5 border border-amber-500/25 rounded-2xl p-3.5 flex items-start justify-between gap-3"
+                      >
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-white">{item.reply}</p>
+                          {item.translation && (
+                            <p className="text-[11px] text-slate-400">{item.translation}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => copyToClipboard(item.reply, `sav-${idx}`)}
+                            className="p-2 rounded-lg bg-slate-800 text-slate-200 hover:bg-rose-500 hover:text-white transition"
+                          >
+                            <Icon name="copy" className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => toggleSaveLine(item)}
+                            className="p-2 rounded-lg bg-slate-800 text-rose-400 hover:bg-rose-500/20 transition"
+                          >
+                            <Icon name="trash" className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {STARTER_PACKS.map((pack, pIdx) => (
+                  <div key={pIdx} className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-white">{pack.category}</h3>
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                        {pack.badge}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {pack.lines.map((line, lIdx) => (
+                        <div
+                          key={lIdx}
+                          className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-semibold uppercase text-rose-400">
+                              {line.tag}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() =>
+                                  toggleSaveLine({
+                                    reply: line.text,
+                                    translation: line.meaning,
+                                    tone: line.tag
+                                  })
+                                }
+                                className={`p-1.5 rounded-lg border ${
+                                  isSaved(line.text)
+                                    ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                                    : "bg-slate-800 border-slate-700 text-slate-400"
+                                }`}
+                              >
+                                <Icon name="bookmark" className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => copyToClipboard(line.text, `v-${pIdx}-${lIdx}`)}
+                                className="flex items-center gap-1 text-xs font-medium bg-slate-800 hover:bg-rose-500 text-slate-200 hover:text-white px-2.5 py-1 rounded-lg transition"
+                              >
+                                {copiedIndex === `v-${pIdx}-${lIdx}` ? "Copied" : "Copy"}
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-sm text-white font-medium leading-snug">{line.text}</p>
+                          <p className="text-[11px] text-slate-400">{line.meaning}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <div class="text-xs font-bold text-sky-400">3. Callback Humor</div>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                  Remember a small detail they mentioned earlier (like loving pani puri or hating mornings) and bring it up later as an inside joke.
-                </p>
+            )}
+
+            {/* TAB 5: PRO DATING & CHATTING TIPS */}
+            {activeTab === "tips" && (
+              <div className="space-y-3.5">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400">Rule #1</span>
+                  <h3 className="text-sm font-bold text-white">Stop Asking Boring Interview Questions</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Avoid repeating "Tinava?", "Em chesthunnav?", "Work ela undi?". Instead, make playful assumptions: <span className="text-rose-300">"Nuvvu pakka ippudu series chusthu time pass chesthunnav kada?"</span>
+                  </p>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400">Rule #2</span>
+                  <h3 className="text-sm font-bold text-white">The Push-Pull Tease</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Give a sweet compliment and immediately add a light tease so you don't sound overly desperate: <span className="text-purple-300">"Nuvvu chala manchi danivi anukunna... kani koncham over action ekkuva neeku!"</span>
+                  </p>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Rule #3</span>
+                  <h3 className="text-sm font-bold text-white">Match Their Energy & Move Off Text</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Keep your texts roughly the same length as theirs. Once the vibe is flowing well for 2–3 days, suggest a quick coffee or hangout instead of endless texting.
+                  </p>
+                </div>
               </div>
-              <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <div class="text-xs font-bold text-purple-400">4. End On A High Note</div>
-                <p class="text-xs text-slate-300 leading-relaxed">
-                  When the chat is super fun, say <span class="text-emerald-300">"Sare nenu koncham work chuskoni malli ping chestha, miss avvaku!"</span>
-                </p>
+            )}
+          </main>
+
+          {/* Bottom Navigation Bar */}
+          <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/90 px-1.5 py-2 flex items-center justify-around z-30">
+            {[
+              { id: "reply", label: "AI Reply", icon: "wand" },
+              { id: "keyboard", label: "Keyboard", icon: "keyboard" },
+              { id: "topics", label: "Long Chat", icon: "compass" },
+              { id: "vault", label: "Vault", icon: "book" },
+              { id: "tips", label: "Pro Tips", icon: "sparkles" }
+            ].map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition ${
+                    active ? "text-rose-400 bg-rose-500/10" : "text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <Icon name={tab.icon} className="w-5 h-5" />
+                  <span className="text-[10px] font-semibold">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* API Key Setup Modal */}
+          {showDeployModal && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <Icon name="key" className="w-4 h-4 text-emerald-400" />
+                    Gemini API Key Setup
+                  </h3>
+                  <button
+                    onClick={() => setShowDeployModal(false)}
+                    className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                  >
+                    <Icon name="x" className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-400">
+                      Paste Your Free Gemini API Key
+                    </span>
+                    <a
+                      href="https://aistudio.google.com/apikey"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] underline text-rose-300 hover:text-rose-200"
+                    >
+                      Get Free Key ↗
+                    </a>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Saved privately inside your phone's local browser storage (never shared anywhere):
+                  </p>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="password"
+                      value={customApiKey}
+                      onChange={(e) => setCustomApiKey(e.target.value)}
+                      placeholder="Paste AQ... or AIzaSy... key here"
+                      className="flex-1 bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-lg px-2.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none"
+                    />
+                    {customApiKey && (
+                      <button
+                        onClick={() => setCustomApiKey("")}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-800 text-rose-300 text-xs font-medium"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowDeployModal(false);
+                    if (customApiKey) triggerToast("API Key saved on your device!");
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition"
+                >
+                  Save & Start Chatting
+                </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
-      `;
+      );
     }
 
-    // ============================================================================
-    // KEYBOARD INTERACTION HANDLERS
-    // ============================================================================
-    function startBubblePress(msgId) {
-      if (!state.keyboardEnabled) return;
-      pressTimer = setTimeout(() => triggerBubbleDetect(msgId), 450);
-    }
-
-    function endBubblePress() {
-      if (pressTimer) {
-        clearTimeout(pressTimer);
-        pressTimer = null;
-      }
-    }
-
-    function triggerBubbleDetect(msgId) {
-      if (!state.keyboardEnabled) return;
-      const msg = state.kbMessages.find(m => m.id === msgId);
-      if (!msg) return;
-      state.longPressTarget = msg;
-      generateReplies(msg.text, 'keyboard');
-    }
-
-    function addSampleKbMsg() {
-      const samples = [
-        'Nuvvu chala busy person la unnav ga?',
-        'Naku bore koduthundi, emaina cheppu',
-        'Dinner ayyinda? Em tinnav?',
-        'Why are you so cute today? 🙈'
-      ];
-      const next = samples[state.kbMessages.length % samples.length];
-      state.kbMessages.push({ id: Date.now(), sender: 'them', text: next });
-      render();
-    }
-
-    function sendKbMsg() {
-      const clean = state.kbChatInput.trim();
-      if (!clean) return;
-      state.kbMessages.push({ id: Date.now(), sender: 'me', text: clean });
-      state.kbChatInput = '';
-      render();
-    }
-
-    function toggleKbLang() {
-      state.kbLang = state.kbLang === 'tenglish' ? 'english' : 'tenglish';
-      if (state.longPressTarget) generateReplies(state.longPressTarget.text, 'keyboard');
-      else render();
-    }
-
-    function cycleKbVibe() {
-      const order = ['playful', 'sweet', 'bold', 'deep'];
-      state.kbVibe = order[(order.indexOf(state.kbVibe) + 1) % order.length];
-      if (state.longPressTarget) generateReplies(state.longPressTarget.text, 'keyboard');
-      else render();
-    }
-
-    // ============================================================================
-    // MASTER RENDER & EVENT WIRING
-    // ============================================================================
-    function render() {
-      const mainEl = document.getElementById('appMain');
-      const navEl = document.getElementById('bottomNav');
-
-      if (state.activeTab === 'wingman') mainEl.innerHTML = renderWingmanTab();
-      else if (state.activeTab === 'keyboard') mainEl.innerHTML = renderKeyboardTab();
-      else if (state.activeTab === 'topics') mainEl.innerHTML = renderTopicsTab();
-      else if (state.activeTab === 'vault') mainEl.innerHTML = renderVaultTab();
-      else if (state.activeTab === 'coach') mainEl.innerHTML = renderCoachTab();
-
-      const tabs = [
-        { id: 'wingman', label: 'AI Reply', icon: 'wand-2' },
-        { id: 'keyboard', label: 'Keyboard', icon: 'keyboard' },
-        { id: 'topics', label: 'Long Chat', icon: 'compass' },
-        { id: 'vault', label: 'Vault', icon: 'book-open' },
-        { id: 'coach', label: 'Pro Tips', icon: 'sparkles' }
-      ];
-
-      navEl.innerHTML = tabs.map(t => {
-        const isActive = state.activeTab === t.id;
-        return `
-          <button onclick="switchTab('${t.id}')" class="flex flex-col items-center justify-center py-2 rounded-2xl transition active:scale-95 ${isActive ? 'bg-rose-500/15 text-rose-400 font-bold' : 'text-slate-400 hover:text-slate-200'}">
-            <i data-lucide="${t.icon}" class="w-5 h-5 mb-1 ${isActive ? 'text-rose-400' : ''}"></i>
-            <span class="text-[11px]">${t.label}</span>
-          </button>
-        `;
-      }).join('');
-
-      // Bind live input listeners so typing doesn't lose state
-      const herInput = document.getElementById('herMessageInput');
-      if (herInput) {
-        herInput.addEventListener('input', (e) => { state.herMessage = e.target.value; });
-      }
-      const ctxInput = document.getElementById('contextNoteInput');
-      if (ctxInput) {
-        ctxInput.addEventListener('input', (e) => { state.contextNote = e.target.value; });
-      }
-      const kbInput = document.getElementById('kbChatInput');
-      if (kbInput) {
-        kbInput.addEventListener('input', (e) => { state.kbChatInput = e.target.value; });
-        kbInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendKbMsg(); });
-      }
-
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function switchTab(tabId) {
-      state.activeTab = tabId;
-      if (tabId === 'topics' && state.topicResults.length === 0) {
-        generateTopics('just_matched');
-        return;
-      }
-      render();
-    }
-
-    // Modal Wiring
-    const modal = document.getElementById('androidModal');
-    const apiKeyInput = document.getElementById('apiKeyInput');
-    apiKeyInput.value = state.customApiKey;
-
-    document.getElementById('openModalBtn').onclick = () => { modal.classList.remove('hidden'); lucide.createIcons(); };
-    document.getElementById('closeModalBtn').onclick = () => modal.classList.add('hidden');
-    document.getElementById('doneModalBtn').onclick = () => modal.classList.add('hidden');
-
-    apiKeyInput.addEventListener('input', (e) => {
-      state.customApiKey = e.target.value;
-      localStorage.setItem('rizztenglish_gemini_key', state.customApiKey.trim());
-      const toast = document.getElementById('keySavedToast');
-      toast.classList.remove('hidden');
-      setTimeout(() => toast.classList.add('hidden'), 2000);
-    });
-
-    document.getElementById('clearKeyBtn').onclick = () => {
-      state.customApiKey = '';
-      apiKeyInput.value = '';
-      localStorage.removeItem('rizztenglish_gemini_key');
-    };
-
-    window.onload = () => {
-      render();
-    };
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
   </script>
 </body>
 </html>
