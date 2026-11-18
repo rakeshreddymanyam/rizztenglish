@@ -306,11 +306,11 @@
           throw new Error("Tap 'Add API Key' at the top right and paste your free Gemini API key first.");
         }
 
-        // Automatically try multiple fast Gemini models if one hits a temporary 503 traffic spike
+        // Current active Gemini 3.x models (2.5 models are restricted for new keys)
         const modelsToTry = [
-          "gemini-2.5-flash-lite",
-          "gemini-2.5-flash",
-          "gemini-flash-latest"
+          "gemini-3.5-flash-lite",
+          "gemini-3.8-flash",
+          "gemini-3.6-flash"
         ];
 
         const payload = {
@@ -346,7 +346,10 @@
           try {
             const response = await fetch(url, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey
+              },
               body: JSON.stringify(payload)
             });
 
@@ -366,12 +369,10 @@
                 detail = errJson?.error?.message ? `: ${errJson.error.message}` : "";
               } catch {}
               lastError = `API Error (${response.status})${detail}`;
-              // If invalid API key (400/401/403), stop retrying immediately
               if (response.status === 400 || response.status === 401 || response.status === 403) {
                 throw new Error(lastError);
               }
-              // Otherwise (404, 429, 503), wait 600ms and try the next model automatically
-              await new Promise((r) => setTimeout(r, 600));
+              await new Promise((r) => setTimeout(r, 500));
             }
           } catch (err) {
             if (err.message && (err.message.includes("400") || err.message.includes("401") || err.message.includes("403"))) {
