@@ -286,11 +286,10 @@
           throw new Error("Tap 'Add API Key' at the top right and paste your free Gemini API key first.");
         }
 
-        // Verified active Gemini API endpoints with automatic retry on 503 traffic spikes
+        // Exact model recommended by Google's API for new keys: gemini-3.5-flash-lite
         const modelsToTry = [
-          "gemini-2.5-flash",
-          "gemini-2.0-flash",
-          "gemini-2.5-flash-lite"
+          "gemini-3.5-flash-lite",
+          "gemini-3.5-flash"
         ];
 
         const payload = {
@@ -328,7 +327,8 @@
             const response = await fetch(url, {
               method: "POST",
               headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey
               },
               body: JSON.stringify(payload)
             });
@@ -352,7 +352,7 @@
               if (response.status === 400 || response.status === 401 || response.status === 403) {
                 throw new Error(lastError);
               }
-              await new Promise((r) => setTimeout(r, 700));
+              await new Promise((r) => setTimeout(r, 600));
             }
           } catch (err) {
             if (err.message && (err.message.includes("400") || err.message.includes("401") || err.message.includes("403"))) {
